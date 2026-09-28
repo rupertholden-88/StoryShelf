@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from "react";
 import {
-  collection, deleteDoc, doc, FieldPath, getDoc, increment, onSnapshot,
-  serverTimestamp, setDoc, updateDoc,
+  collection, deleteDoc, doc, FieldPath, getDoc, getDocs, increment, onSnapshot, query,
+  serverTimestamp, setDoc, updateDoc, where, type Timestamp,
 } from "firebase/firestore";
-import { db, HOUSEHOLD_ID } from "./firebase";
+import { db, householdId } from "./firebase";
+import { titleKey } from "./recommend";
 import type { Book, Rec } from "./types";
 
-const booksCol = () => collection(db(), "households", HOUSEHOLD_ID, "books");
-const bookRef = (isbn: string) => doc(db(), "households", HOUSEHOLD_ID, "books", isbn);
-const wishCol = () => collection(db(), "households", HOUSEHOLD_ID, "wishlist");
-const wishRef = (id: string) => doc(db(), "households", HOUSEHOLD_ID, "wishlist", id);
+const booksCol = () => collection(db(), "households", householdId(), "books");
+const bookRef = (isbn: string) => doc(db(), "households", householdId(), "books", isbn);
+const wishCol = () => collection(db(), "households", householdId(), "wishlist");
+const wishRef = (id: string) => doc(db(), "households", householdId(), "wishlist", id);
 
 function withDefaults(data: Partial<Book>, isbn: string): Book {
   return {
@@ -79,7 +80,13 @@ export async function addBook(b: NewBook, addedBy: string) {
     addedAt: serverTimestamp(),
     addedBy,
   });
-  await deleteDoc(wishRef(b.isbn)).catch(() => {});
+  await clearWished(b).catch(() => {});
+}
+
+/** Takes a newly added book off the saved list, whichever edition was saved. */
+async function clearWished(b: Pick<Book, "isbn" | "title">) {
+  const sameTitle = await getDocs(query(wishCol(), where("key", "==", titleKey(b.title))));
+  await Promise.all([deleteDoc(wishRef(b.isbn)), ...sameTitle.docs.map((d) => deleteDoc(d.ref))]);
 }
 
 export const updateBook = (isbn: string, patch: Partial<Book>) => updateDoc(bookRef(isbn), patch);
@@ -88,10 +95,24 @@ export const rateBook = (isbn: string, uid: string, name: string, stars: number)
 export const readAgain = (isbn: string) => updateDoc(bookRef(isbn), { readCount: increment(1) });
 export const removeBook = (isbn: string) => deleteDoc(bookRef(isbn));
 
+export type Wished = Rec & { addedAt?: Timestamp | null };
+
+/** Books saved from suggestions, newest first, plus their ids for quick lookups. */
 export function useWishlist() {
-  const [ids, setIds] = useState<Set<string>>(new Set());
-  useEffect(() => onSnapshot(wishCol(), (snap) => setIds(new Set(snap.docs.map((d) => d.id)))), []);
-  return ids;
+  const [items, setItems] = useState<Wished[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(
+    () =>
+      onSnapshot(wishCol(), (snap) => {
+        const list = snap.docs.map((d) => d.data() as Wished);
+        list.sort((a, b) => (b.addedAt?.toMillis() ?? Infinity) - (a.addedAt?.toMillis() ?? Infinity));
+        setItems(list);
+        setLoading(false);
+      }),
+    []
+  );
+  const ids = new Set(items.map(wishId));
+  return { items, ids, loading };
 }
 
 export const wishId = (r: Rec) => r.isbn ?? r.key;

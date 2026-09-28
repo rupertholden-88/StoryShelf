@@ -14,7 +14,7 @@ export function BookSpine({ book }: { book: Book }) {
   return (
     <Link href={`/book/${book.isbn}`} className="spine" aria-label={label(book)} style={{ width: w, height: h, background: bg, color: fg }}>
       <span className="spine-title">{book.title}</span>
-      <span className="spine-label">{callNumber(book)}</span>
+      {callNumber(book) && <span className="spine-label">{callNumber(book)}</span>}
     </Link>
   );
 }

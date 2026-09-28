@@ -10,12 +10,16 @@ type Detector = { detect: (src: HTMLVideoElement) => Promise<{ rawValue: string 
  * Camera barcode scanner. Uses the browser's BarcodeDetector (Chrome on Android)
  * and falls back to ZXing (Safari on iPhone). Calls onCode once per valid EAN-13 barcode
  * (ISBN or not; the scan page decides what to do with non-book barcodes).
+ * In continuous mode the camera keeps running for the next book, and the same barcode is
+ * ignored for a few seconds so a book held in view isn't reported twice.
  */
-export function Scanner({ active, onCode }: { active: boolean; onCode: (code: string) => void }) {
+export function Scanner({ active, onCode, continuous = false }: { active: boolean; onCode: (code: string) => void; continuous?: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const trackRef = useRef<MediaStreamTrack | null>(null);
   const onCodeRef = useRef(onCode);
   onCodeRef.current = onCode;
+  const continuousRef = useRef(continuous);
+  continuousRef.current = continuous;
   const [error, setError] = useState<string | null>(null);
   const [torch, setTorch] = useState<boolean | null>(null);
 
@@ -25,11 +29,20 @@ export function Scanner({ active, onCode }: { active: boolean; onCode: (code: st
     let stream: MediaStream | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let zxingStop: (() => void) | undefined;
+    let last = { code: "", at: 0 };
 
     const found = (raw: string) => {
       let code = raw.replace(/\D/g, "");
       if (code.length === 12) code = "0" + code; // UPC-A is an EAN-13 with a leading zero
       if (!ean13Valid(code) || stopped) return false;
+      if (continuousRef.current) {
+        const now = Date.now();
+        if (code === last.code && now - last.at < 3000) return false;
+        last = { code, at: now };
+        navigator.vibrate?.(60);
+        onCodeRef.current(code);
+        return false; // keep scanning
+      }
       stopped = true;
       navigator.vibrate?.(60);
       onCodeRef.current(code);

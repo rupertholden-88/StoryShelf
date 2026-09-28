@@ -49,10 +49,15 @@ export interface Book {
 }
 
 export interface Household {
+  /** Firestore document id under /households. */
+  id: string;
+  /** Email addresses of the people who share the library. */
   members: string[];
   childName?: string;
   /** "YYYY-MM" */
   childBirthMonth?: string;
+  /** Secret id of the shared gift list, when sharing is on. */
+  giftToken?: string;
 }
 
 export interface Rec {

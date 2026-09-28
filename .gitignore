@@ -4,3 +4,6 @@ node_modules
 .vercel
 next-env.d.ts
 *.tsbuildinfo
+
+# Firebase emulator logs
+*-debug.log

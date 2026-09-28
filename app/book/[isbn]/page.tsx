@@ -7,13 +7,17 @@ import type { User } from "firebase/auth";
 import { CoverArt } from "@/components/BookArt";
 import { Gate } from "@/components/Gate";
 import { BackIcon, HeartIcon } from "@/components/Icons";
+import { MoreByLinks } from "@/components/MoreByLinks";
 import { Stars } from "@/components/Stars";
-import { callNumber } from "@/lib/appearance";
+import { SyncedField } from "@/components/SyncedField";
+import { callNumber, surname } from "@/lib/appearance";
 import { firstName } from "@/lib/auth";
 import { rateBook, readAgain, removeBook, updateBook, useBook, useBooks } from "@/lib/books";
 import { lookupIsbn } from "@/lib/lookup";
 import { recommend } from "@/lib/recommend";
 import { AGE_BANDS, THEMES, type AgeBand, type Book, type Household, type Rec } from "@/lib/types";
+
+const splitNames = (t: string) => t.split(",").map((a) => a.trim()).filter(Boolean);
 
 export default function BookPage() {
   const { isbn } = useParams<{ isbn: string }>();
@@ -107,24 +111,25 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
 
       <section className="catalogue-card" aria-label="Catalogue card">
         <div className="card-head">
-          <span className="call-no">{callNumber(book)}</span>
+          {callNumber(book) ? (
+            <span className="call-no-wrap">
+              <span className="call-no">{callNumber(book)}</span>
+              <span className="filed-under">Filed under {surname(book)}</span>
+            </span>
+          ) : (
+            <span className="filed-under">Add an author to file it on the shelves</span>
+          )}
           <span className="isbn">{/^97[89]/.test(book.isbn) ? "ISBN" : "Barcode"} {book.isbn}</span>
         </div>
 
         {editing && (
           <div className="card-row card-edit">
             <label htmlFor="title" className="field-label">Title</label>
-            <input id="title" className="field" defaultValue={book.title} onBlur={(e) => e.target.value.trim() && e.target.value !== book.title && updateBook(book.isbn, { title: e.target.value.trim() })} />
+            <SyncedField id="title" required value={book.title} onSave={(title) => updateBook(book.isbn, { title })} />
             <label htmlFor="author" className="field-label">Author</label>
-            <input id="author" className="field" defaultValue={book.authors.join(", ")} onBlur={(e) => {
-              const authors = e.target.value.split(",").map((a) => a.trim()).filter(Boolean);
-              if (authors.join(", ") !== book.authors.join(", ")) updateBook(book.isbn, { authors });
-            }} />
+            <SyncedField id="author" value={book.authors.join(", ")} onSave={(t) => updateBook(book.isbn, { authors: splitNames(t) })} />
             <label htmlFor="illustrator" className="field-label">Illustrator</label>
-            <input id="illustrator" className="field" defaultValue={book.illustrators.join(", ")} onBlur={(e) => {
-              const illustrators = e.target.value.split(",").map((a) => a.trim()).filter(Boolean);
-              if (illustrators.join(", ") !== book.illustrators.join(", ")) updateBook(book.isbn, { illustrators });
-            }} />
+            <SyncedField id="illustrator" value={book.illustrators.join(", ")} onSave={(t) => updateBook(book.isbn, { illustrators: splitNames(t) })} />
             <div className="field-pair">
               <div>
                 <label htmlFor="theme" className="field-label">Shelf</label>
@@ -173,7 +178,7 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
             <h2 id="more" className="section-title">More like this</h2>
             <p className="section-sub">Not on your shelves yet</p>
           </div>
-          <Link href="/for-you" className="text-btn">See all and buy</Link>
+          <Link href={`/book/${book.isbn}/like`} className="text-btn">See more</Link>
         </div>
         {recs === null ? (
           <p className="section-sub">Looking for similar books…</p>
@@ -182,13 +187,14 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
         ) : (
           <div className="mini-grid">
             {recs.map((r) => (
-              <Link key={r.key} href="/for-you" className="mini-rec">
+              <Link key={r.key} href={`/book/${book.isbn}/like`} className="mini-rec">
                 <CoverArt book={{ isbn: r.isbn ?? r.key, title: r.title, authors: [r.author], coverUrl: r.coverUrl, favourite: false }} width={76} height={98} />
                 <span className="mini-title">{r.title}</span>
               </Link>
             ))}
           </div>
         )}
+        <MoreByLinks book={book} />
       </section>
     </div>
   );

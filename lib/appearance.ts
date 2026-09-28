@@ -32,8 +32,7 @@ export function surname(b: Pick<Book, "authors">): string {
   return parts[parts.length - 1] || "";
 }
 
-/** Library-style call number: first three letters of the author's surname. */
+/** Library-style call number: first three letters of the author's surname, or "" when there's no author. */
 export function callNumber(b: Pick<Book, "authors">): string {
-  const s = surname(b).replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase();
-  return s || "???";
+  return surname(b).replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase();
 }

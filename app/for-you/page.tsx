@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { AffiliateNote } from "@/components/AffiliateNote";
 import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { Gate } from "@/components/Gate";
@@ -15,7 +17,7 @@ export default function ForYouPage() {
 
 function ForYou({ household }: { household: Household }) {
   const { books, loading } = useBooks();
-  const wishlist = useWishlist();
+  const { ids: wished, items: saved } = useWishlist();
   const [recs, setRecs] = useState<Rec[] | null>(null);
   const [tab, setTab] = useState<"now" | "next">("now");
   const nowBand = bandForMonths(childAgeMonths(household));
@@ -40,12 +42,13 @@ function ForYou({ household }: { household: Household }) {
   return (
     <>
       <header className="lib-header">
-        <div>
+        <div className="lib-title-row">
           <h1 className="lib-title">For you</h1>
-          <p className="lib-sub">
-            {seeds.length ? `Picked from ${seeds.slice(0, 2).map((s) => s.title).join(" and ")}${seeds.length > 2 ? " and more" : ""}` : "Rate a few books to get suggestions"}
-          </p>
+          <Link href="/for-you/saved" className="saved-link">Saved{saved.length ? ` · ${saved.length}` : ""}</Link>
         </div>
+        <p className="lib-sub tucked">
+          {seeds.length ? `Picked from ${seeds.slice(0, 2).map((s) => s.title).join(" and ")}${seeds.length > 2 ? " and more" : ""}` : "Rate a few books to get suggestions"}
+        </p>
         {nowBand && (
           <div className="segmented full" role="group" aria-label="Age range">
             <button type="button" aria-pressed={tab === "now"} onClick={() => setTab("now")}>Right for now</button>
@@ -63,9 +66,10 @@ function ForYou({ household }: { household: Household }) {
           </p>
         ) : (
           shown.map((r) => (
-            <RecCard key={r.key} rec={r} wished={wishlist.has(wishId(r))} onWish={(on) => toggleWishlist(r, on)} />
+            <RecCard key={r.key} rec={r} wished={wished.has(wishId(r))} onWish={(on) => toggleWishlist(r, on)} />
           ))
         )}
+        <AffiliateNote />
       </main>
 
       <BottomNav active="foryou" />

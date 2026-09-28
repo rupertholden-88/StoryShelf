@@ -31,13 +31,31 @@ export function cleanIsbn(raw: string): string | null {
   return null;
 }
 
-export function pickIsbn(list: string[] | undefined): string | null {
-  if (!list) return null;
-  for (const raw of list) {
+/** English-language registration groups: 978-0 and 978-1 (UK, US, Australia…) and 979-8 (US). */
+export const isEnglishIsbn = (isbn13: string) => /^(978[01]|9798)/.test(isbn13);
+
+/**
+ * The edition to use for a book found on Open Library: an English-language ISBN if there is one,
+ * since a work's ISBN list mixes in translations (French, Spanish…) in no particular order.
+ */
+export function pickEdition(list: string[] | undefined): { isbn: string | null; english: boolean } {
+  let first: string | null = null;
+  for (const raw of list ?? []) {
     const c = cleanIsbn(raw);
-    if (c) return c;
+    if (!c) continue;
+    if (isEnglishIsbn(c)) return { isbn: c, english: true };
+    first ??= c;
   }
-  return null;
+  return { isbn: first, english: false };
+}
+
+/**
+ * Cover for a book found on Open Library. With an English edition, its cover is found from the ISBN
+ * (see coverCandidates), because the work's own cover is often a translation's.
+ */
+export function editionCover(edition: { english: boolean }, coverId: number | undefined): string | null {
+  if (edition.english || !coverId) return null;
+  return `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`;
 }
 
 /** ISBN-10 for a 978 ISBN-13 (979 has no ISBN-10 form). */

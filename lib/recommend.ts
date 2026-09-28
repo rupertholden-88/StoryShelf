@@ -1,11 +1,14 @@
 import { guessAge, guessFormat } from "./classify";
-import { pickIsbn } from "./isbn";
+import { editionCover, pickEdition } from "./isbn";
+import { LOOKUP_TIMEOUT_MS } from "./lookup";
 import type { Book, Rec } from "./types";
 
-const KID = /juvenile|children|picture book|board book|toddler|baby|nursery|preschool/i;
+export const KID = /juvenile|children|picture book|board book|toddler|baby|nursery|preschool/i;
 const GENERIC = /^(fiction|juvenile fiction|juvenile literature|children's (fiction|stories|books)|picture books( for children)?|board books|stories in rhyme|english language|large type books|accessible book|protected daisy|in library|toy and movable books|lift-the-flap books|readers)$/i;
 
-const norm = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, "");
+/** Edition-independent key for a title; suggestions and saved books are matched on it. */
+export const titleKey = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, "");
+const norm = titleKey;
 
 function useful(subject: string): boolean {
   return subject.length < 40 && !/[:=]/.test(subject) && !GENERIC.test(subject.trim());
@@ -13,10 +16,14 @@ function useful(subject: string): boolean {
 
 async function search(params: string): Promise<any[]> {
   const url = `https://openlibrary.org/search.json?${params}&language=eng&limit=25&fields=key,title,author_name,isbn,cover_i,subject`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  const json = await res.json();
-  return json.docs ?? [];
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.docs ?? [];
+  } catch {
+    return [];
+  }
 }
 
 const avgRating = (b: Book) => {
@@ -32,7 +39,8 @@ export function pickSeeds(books: Book[]): Book[] {
 }
 
 export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promise<Rec[]> {
-  const cacheKey = "nb-recs:" + seeds.map((s) => s.isbn).join(",") + ":" + owned.length + ":" + limit;
+  // v2: English editions only (earlier results could hold French/Spanish covers).
+  const cacheKey = "nb-recs2:" + seeds.map((s) => s.isbn).join(",") + ":" + owned.length + ":" + limit;
   try {
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) return JSON.parse(cached);
@@ -43,7 +51,11 @@ export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promi
 
   const add = (docs: any[], weight: number, why: string) => {
     for (const d of docs) {
-      if (!d.title) continue;
+      // Records with no author are usually incomplete (and look it), so they aren't suggested.
+      if (!d.title || !d.author_name?.length) continue;
+      // Only translations (no English ISBN): the cover and shop links would be for a foreign edition.
+      const edition = pickEdition(d.isbn);
+      if (edition.isbn && !edition.english) continue;
       const key = norm(d.title);
       if (ownedTitles.has(key)) continue;
       const subjects: string[] = d.subject ?? [];
@@ -55,13 +67,14 @@ export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promi
       }
       found.set(key, {
         key,
-        isbn: pickIsbn(d.isbn),
+        isbn: edition.isbn,
         title: d.title,
-        author: d.author_name?.[0] ?? "Unknown author",
-        coverUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : null,
+        author: d.author_name[0],
+        coverUrl: editionCover(edition, d.cover_i),
         ageBand: guessAge(guessFormat(null, null, subjects), subjects, null),
         why,
-        score: weight,
+        // A cover makes a suggestion far easier to recognise, so those edge ahead.
+        score: weight + (d.cover_i ? 1 : 0),
       });
     }
   };
@@ -96,6 +109,7 @@ export function shopLinks(r: { isbn: string | null; title: string; author: strin
   const tag = process.env.NEXT_PUBLIC_AMAZON_TAG;
   return {
     amazon: `https://www.amazon.co.uk/s?k=${encodeURIComponent(q)}&i=stripbooks${tag ? `&tag=${encodeURIComponent(tag)}` : ""}`,
-    ebay: `https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(q)}`,
+    // UK sellers only (LH_PrefLoc=1), cheapest including postage first (_sop=15).
+    ebay: `https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(q)}&LH_PrefLoc=1&_sop=15`,
   };
 }
