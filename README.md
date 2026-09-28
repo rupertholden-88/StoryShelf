@@ -21,7 +21,8 @@ Next.js (App Router) PWA · Firebase Auth + Firestore · hosted on Vercel.
   including postage. The route only answers signed-in household members.
 - **Search:** the magnifier on the Library opens a search of your shelves (title, author, illustrator, shelf
   or subject) and of Open Library, children's books first. Any result with an ISBN can be added to the shelf
-  without scanning, saved, or looked up on Amazon/eBay UK.
+  without scanning, saved, or looked up on Amazon/eBay UK. Each book's page has "See more" for similar books
+  (same author, illustrator or subjects) and "More by…" shortcuts into search.
 - **Saved books:** bookmark a suggestion to keep it under For you → Saved. It drops off the list once you scan
   any edition of it.
 - **Offline:** the library is cached on the phone, so it opens instantly and still works without signal.

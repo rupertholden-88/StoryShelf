@@ -5,11 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { CoverArt } from "@/components/BookArt";
 import { BottomNav } from "@/components/BottomNav";
 import { Gate } from "@/components/Gate";
-import { BackIcon, BookmarkIcon } from "@/components/Icons";
-import { toggleWishlist, useBooks, useWishlist, wishId } from "@/lib/books";
-import { shopLinks } from "@/lib/recommend";
-import { asRec, searchBooks, searchShelves, type Hit } from "@/lib/search";
-import { AGE_BANDS } from "@/lib/types";
+import { HitCard } from "@/components/HitCard";
+import { BackIcon } from "@/components/Icons";
+import { useBooks, useWishlist, wishId } from "@/lib/books";
+import { searchBooks, searchShelves, type Hit } from "@/lib/search";
 
 export default function SearchPage() {
   return <Gate>{() => <Search />}</Gate>;
@@ -119,7 +118,7 @@ function Search() {
               ) : (
                 <div className="hit-list">
                   {hits.map((h) => (
-                    <HitCard key={h.key} hit={h} wished={wished.has(wishId(h))} />
+                    <HitCard key={h.key} rec={h} year={h.year} showAge={h.forChildren} wished={wished.has(wishId(h))} />
                   ))}
                 </div>
               )}
@@ -130,34 +129,5 @@ function Search() {
 
       <BottomNav active="library" />
     </>
-  );
-}
-
-function HitCard({ hit, wished }: { hit: Hit; wished: boolean }) {
-  const links = shopLinks(hit);
-  const age = AGE_BANDS.find((b) => b.id === hit.ageBand)?.label;
-  const meta = [hit.year, hit.forChildren ? age : null].filter(Boolean).join(" · ");
-  return (
-    <article className="rec-card">
-      <CoverArt book={{ isbn: hit.isbn ?? hit.key, title: hit.title, authors: [hit.author], coverUrl: hit.coverUrl, favourite: false }} width={64} height={86} />
-      <div className="rec-body">
-        <h3 className="rec-title">{hit.title}</h3>
-        <p className="rec-author">{hit.author}{meta && <span className="rec-age">{meta}</span>}</p>
-        <div className="rec-actions">
-          {hit.isbn && <Link className="btn btn-small btn-dark" href={`/scan?isbn=${hit.isbn}`}>Add to shelf</Link>}
-          <a className="shop-btn" href={links.amazon} target="_blank" rel="noopener noreferrer"><span className="shop-name">Amazon</span></a>
-          <a className="shop-btn" href={links.ebay} target="_blank" rel="noopener noreferrer"><span className="shop-name">eBay</span></a>
-          <button
-            type="button"
-            className="icon-btn wish-btn"
-            aria-label={wished ? `Remove ${hit.title} from saved books` : `Save ${hit.title}`}
-            aria-pressed={wished}
-            onClick={() => toggleWishlist(asRec(hit), !wished)}
-          >
-            <BookmarkIcon filled={wished} />
-          </button>
-        </div>
-      </div>
-    </article>
   );
 }

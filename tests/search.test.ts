@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { asRec, searchBooks, searchShelves } from "@/lib/search";
+import { searchBooks, searchShelves } from "@/lib/search";
 import type { Book } from "@/lib/types";
 
 const book = (over: Partial<Book>): Book => ({
@@ -44,12 +44,6 @@ describe("searchBooks", () => {
     expect(hits.map((h) => [h.title, h.forChildren])).toEqual([["The Gruffalo's Child", true], ["Gruffalo Crumble", false]]);
     expect(hits[0]).toMatchObject({ isbn: "9781405020466", coverUrl: "https://covers.openlibrary.org/b/id/42-M.jpg", author: "Julia Donaldson" });
     expect(hits[1]).toMatchObject({ isbn: null, year: 2015, author: "A Chef" });
-  });
-
-  it("saves only the fields the wishlist rules allow", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ docs: [{ title: "Zog", subject: ["Juvenile fiction"] }] }))));
-    const [hit] = await searchBooks("zog", []);
-    expect(Object.keys(asRec(hit)).sort()).toEqual(["ageBand", "author", "coverUrl", "isbn", "key", "score", "title", "why"]);
   });
 
   it("reports a failed search", async () => {

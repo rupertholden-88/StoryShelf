@@ -51,7 +51,3 @@ export async function searchBooks(q: string, owned: Book[]): Promise<Hit[]> {
   // Stable sort keeps Open Library's relevance order within each group.
   return hits.sort((a, b) => Number(b.forChildren) - Number(a.forChildren));
 }
-
-/** Just the fields a saved book keeps (see firestore.rules). */
-export const asRec = ({ key, isbn, title, author, coverUrl, ageBand, why, score }: Hit): Rec =>
-  ({ key, isbn, title, author, coverUrl, ageBand, why, score });

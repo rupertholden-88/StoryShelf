@@ -7,6 +7,7 @@ import type { User } from "firebase/auth";
 import { CoverArt } from "@/components/BookArt";
 import { Gate } from "@/components/Gate";
 import { BackIcon, HeartIcon } from "@/components/Icons";
+import { MoreByLinks } from "@/components/MoreByLinks";
 import { Stars } from "@/components/Stars";
 import { SyncedField } from "@/components/SyncedField";
 import { callNumber } from "@/lib/appearance";
@@ -170,7 +171,7 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
             <h2 id="more" className="section-title">More like this</h2>
             <p className="section-sub">Not on your shelves yet</p>
           </div>
-          <Link href="/for-you" className="text-btn">See all and buy</Link>
+          <Link href={`/book/${book.isbn}/like`} className="text-btn">See more</Link>
         </div>
         {recs === null ? (
           <p className="section-sub">Looking for similar books…</p>
@@ -179,13 +180,14 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
         ) : (
           <div className="mini-grid">
             {recs.map((r) => (
-              <Link key={r.key} href="/for-you" className="mini-rec">
+              <Link key={r.key} href={`/book/${book.isbn}/like`} className="mini-rec">
                 <CoverArt book={{ isbn: r.isbn ?? r.key, title: r.title, authors: [r.author], coverUrl: r.coverUrl, favourite: false }} width={76} height={98} />
                 <span className="mini-title">{r.title}</span>
               </Link>
             ))}
           </div>
         )}
+        <MoreByLinks book={book} />
       </section>
     </div>
   );
