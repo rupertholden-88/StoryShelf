@@ -17,7 +17,7 @@ export function Gate({ children }: { children: (ctx: { user: User; household: Ho
   if (!user) {
     return (
       <div className="gate">
-        <h1 className="gate-title">Our library</h1>
+        <h1 className="gate-title">Story Shelf</h1>
         <p className="gate-note">Sign in to see the bookshelf, scan new books and rate old favourites.</p>
         <button type="button" className="btn btn-light" onClick={() => signIn().catch(() => {})}>Sign in with Google</button>
       </div>

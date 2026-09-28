@@ -1,5 +1,5 @@
 // Minimal service worker: makes the app installable and caches the app shell.
-const CACHE = "nurserybooks-v1";
+const CACHE = "story-shelf-v1";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(["/", "/manifest.webmanifest"])).then(() => self.skipWaiting()));

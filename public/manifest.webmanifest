@@ -1,6 +1,6 @@
 {
-  "name": "NurseryBooks",
-  "short_name": "NurseryBooks",
+  "name": "Story Shelf",
+  "short_name": "Story Shelf",
   "description": "Our bookshelf: scan, rate and find more books like the ones we love.",
   "start_url": "/",
   "display": "standalone",

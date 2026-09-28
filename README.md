@@ -1,4 +1,4 @@
-# NurseryBooks
+# Story Shelf
 
 Our children's bookshelf. Scan a book's barcode to add it, see the library as a real wooden bookcase
 (spines or covers, arranged by theme, age or author), rate books, and get suggestions for similar books

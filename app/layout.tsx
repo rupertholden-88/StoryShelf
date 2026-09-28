@@ -4,11 +4,11 @@ import { RegisterSW } from "@/components/RegisterSW";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NurseryBooks",
+  title: "Story Shelf",
   description: "Our bookshelf: scan, rate and find more books like the ones we love.",
   manifest: "/manifest.webmanifest",
   icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
-  appleWebApp: { capable: true, title: "NurseryBooks", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Story Shelf", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {
