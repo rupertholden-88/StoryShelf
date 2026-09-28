@@ -30,7 +30,7 @@ export function RecCard({ rec, wished, onWish }: { rec: Rec; wished: boolean; on
 
   return (
     <article className="rec-card">
-      <CoverArt book={{ isbn: rec.key, title: rec.title, authors: [rec.author], coverUrl: rec.coverUrl, favourite: false }} width={64} height={86} />
+      <CoverArt book={{ isbn: rec.isbn ?? rec.key, title: rec.title, authors: [rec.author], coverUrl: rec.coverUrl, favourite: false }} width={64} height={86} />
       <div className="rec-body">
         <h2 className="rec-title">{rec.title}</h2>
         <p className="rec-author">{rec.author}{age && <span className="rec-age">{age}</span>}</p>

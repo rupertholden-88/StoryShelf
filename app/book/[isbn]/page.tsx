@@ -11,6 +11,7 @@ import { Stars } from "@/components/Stars";
 import { callNumber } from "@/lib/appearance";
 import { firstName } from "@/lib/auth";
 import { rateBook, readAgain, removeBook, updateBook, useBook, useBooks } from "@/lib/books";
+import { lookupIsbn } from "@/lib/lookup";
 import { recommend } from "@/lib/recommend";
 import { AGE_BANDS, THEMES, type AgeBand, type Book, type Household, type Rec } from "@/lib/types";
 
@@ -25,6 +26,8 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
   const { books } = useBooks();
   const [editing, setEditing] = useState(false);
   const [recs, setRecs] = useState<Rec[] | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshNote, setRefreshNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (!book || books.length === 0) return;
@@ -54,6 +57,23 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
   const favLabel = household.childName ? `${child}'s favourite` : "A favourite";
   const ageLabel = AGE_BANDS.find((b) => b.id === book.ageBand)?.label;
   const themes = (THEMES as readonly string[]).includes(book.theme) ? THEMES : [...THEMES, book.theme];
+
+  const refresh = async () => {
+    setRefreshing(true);
+    try {
+      const res = await lookupIsbn(book.isbn);
+      if (!res) { setRefreshNote("No more details found. You can type them in above."); return; }
+      const patch: Partial<Book> = {};
+      if (res.coverUrl && !book.coverUrl) patch.coverUrl = res.coverUrl;
+      if (res.authors.length && !book.authors.length) patch.authors = res.authors;
+      if (res.subjects.length > book.subjects.length) patch.subjects = res.subjects;
+      if (res.pages && !book.pages) patch.pages = res.pages;
+      if (Object.keys(patch).length) await updateBook(book.isbn, patch);
+      setRefreshNote(Object.keys(patch).length ? "Details updated." : "Nothing new found.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const remove = async () => {
     if (!confirm(`Remove ${book.title} from the library?`)) return;
@@ -91,6 +111,13 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
 
         {editing && (
           <div className="card-row card-edit">
+            <label htmlFor="title" className="field-label">Title</label>
+            <input id="title" className="field" defaultValue={book.title} onBlur={(e) => e.target.value.trim() && e.target.value !== book.title && updateBook(book.isbn, { title: e.target.value.trim() })} />
+            <label htmlFor="author" className="field-label">Author</label>
+            <input id="author" className="field" defaultValue={book.authors.join(", ")} onBlur={(e) => {
+              const authors = e.target.value.split(",").map((a) => a.trim()).filter(Boolean);
+              if (authors.join(", ") !== book.authors.join(", ")) updateBook(book.isbn, { authors });
+            }} />
             <div className="field-pair">
               <div>
                 <label htmlFor="theme" className="field-label">Shelf</label>
@@ -105,6 +132,8 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
                 </select>
               </div>
             </div>
+            <button type="button" className="btn btn-outline" disabled={refreshing} onClick={refresh}>{refreshing ? "Looking…" : "Look up details again"}</button>
+            {refreshNote && <p className="section-sub" role="status">{refreshNote}</p>}
             <button type="button" className="btn btn-danger" onClick={remove}>Remove from library</button>
           </div>
         )}
@@ -147,7 +176,7 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
           <div className="mini-grid">
             {recs.map((r) => (
               <Link key={r.key} href="/for-you" className="mini-rec">
-                <CoverArt book={{ isbn: r.key, title: r.title, authors: [r.author], coverUrl: r.coverUrl, favourite: false }} width={76} height={98} />
+                <CoverArt book={{ isbn: r.isbn ?? r.key, title: r.title, authors: [r.author], coverUrl: r.coverUrl, favourite: false }} width={76} height={98} />
                 <span className="mini-title">{r.title}</span>
               </Link>
             ))}

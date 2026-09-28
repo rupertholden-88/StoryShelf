@@ -34,3 +34,25 @@ export function pickIsbn(list: string[] | undefined): string | null {
   }
   return null;
 }
+
+/** ISBN-10 for a 978 ISBN-13 (979 has no ISBN-10 form). */
+export function isbn13to10(isbn13: string): string | null {
+  if (!/^978\d{10}$/.test(isbn13)) return null;
+  const core = isbn13.slice(3, 12);
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += Number(core[i]) * (10 - i);
+  const check = (11 - (sum % 11)) % 11;
+  return core + (check === 10 ? "X" : String(check));
+}
+
+/** Cover images to try in order: the saved one, Open Library by ISBN, then Amazon's image by ISBN-10. */
+export function coverCandidates(isbn: string, saved: string | null): string[] {
+  const list: string[] = [];
+  if (saved) list.push(saved);
+  if (/^97[89]\d{10}$/.test(isbn)) {
+    list.push(`https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`);
+    const ten = isbn13to10(isbn);
+    if (ten) list.push(`https://images-na.ssl-images-amazon.com/images/P/${ten}.01.L.jpg`);
+  }
+  return [...new Set(list)];
+}

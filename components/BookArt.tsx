@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type CSSProperties } from "react";
 import { bookColours, callNumber, spineSize } from "@/lib/appearance";
+import { coverCandidates } from "@/lib/isbn";
 import type { Book } from "@/lib/types";
 
 const label = (b: Book) => `${b.title}${b.authors[0] ? ` by ${b.authors[0]}` : ""}${b.favourite ? ", a favourite" : ""}`;
@@ -18,21 +19,33 @@ export function BookSpine({ book }: { book: Book }) {
   );
 }
 
-/** Real cover if Open Library/Google have one, otherwise a coloured stand-in. */
+/** Real cover if one can be found, otherwise a coloured stand-in with the title. */
 export function CoverArt({ book, width, height, className = "" }: {
   book: Pick<Book, "isbn" | "title" | "authors" | "coverUrl" | "favourite">;
   width: number;
   height: number;
   className?: string;
 }) {
-  const [failed, setFailed] = useState(false);
+  const candidates = coverCandidates(book.isbn, book.coverUrl);
+  const [idx, setIdx] = useState(0);
   const { bg, fg } = bookColours(book.isbn);
   const style: CSSProperties = { width, height, background: bg, color: fg };
+  const src = candidates[idx];
+  const next = () => setIdx((i) => i + 1);
   return (
     <span className={`cover ${className}`} style={style}>
-      {book.coverUrl && !failed ? (
+      {src ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={book.coverUrl} alt="" onError={() => setFailed(true)} loading="lazy" />
+        <img
+          key={src}
+          src={src}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={next}
+          // Amazon and some others return a 1×1 placeholder instead of a 404.
+          onLoad={(e) => { if (e.currentTarget.naturalWidth < 20) next(); }}
+        />
       ) : (
         <>
           <span className="cover-title">{book.title}</span>
