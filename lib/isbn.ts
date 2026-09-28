@@ -1,3 +1,8 @@
+/** Checksum for any 13-digit EAN barcode (ISBNs are EANs starting 978/979). */
+export function ean13Valid(s: string): boolean {
+  return /^\d{13}$/.test(s) && isbn13Valid(s);
+}
+
 function isbn13Valid(s: string): boolean {
   let sum = 0;
   for (let i = 0; i < 12; i++) sum += Number(s[i]) * (i % 2 ? 3 : 1);

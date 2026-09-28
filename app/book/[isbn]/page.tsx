@@ -108,7 +108,7 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
       <section className="catalogue-card" aria-label="Catalogue card">
         <div className="card-head">
           <span className="call-no">{callNumber(book)}</span>
-          <span className="isbn">ISBN {book.isbn}</span>
+          <span className="isbn">{/^97[89]/.test(book.isbn) ? "ISBN" : "Barcode"} {book.isbn}</span>
         </div>
 
         {editing && (

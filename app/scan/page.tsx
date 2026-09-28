@@ -18,6 +18,7 @@ import { AGE_BANDS, THEMES, type AgeBand, type Book, type Format } from "@/lib/t
 type Phase =
   | { k: "scanning" }
   | { k: "looking"; isbn: string }
+  | { k: "notIsbn"; code: string }
   | { k: "owned"; book: Book }
   | { k: "new"; draft: NewBook; found: boolean }
   | { k: "added"; book: NewBook };
@@ -70,6 +71,27 @@ function ScanScreen({ user }: { user: User }) {
     }
   };
 
+  const handleCode = (code: string) => {
+    const isbn = cleanIsbn(code);
+    if (isbn) handleIsbn(isbn);
+    else setPhase({ k: "notIsbn", code });
+  };
+
+  // For books with a shop barcode instead of an ISBN (Jellycat and some toy-style books).
+  const addByHand = async (code: string) => {
+    setPhase({ k: "looking", isbn: code });
+    const existing = await getBook(code).catch(() => null);
+    if (existing) {
+      setPhase({ k: "owned", book: existing });
+      return;
+    }
+    setPhase({
+      k: "new",
+      found: false,
+      draft: { isbn: code, title: "", authors: [], illustrators: [], coverUrl: null, subjects: [], pages: null, format: "board", theme: "Stories", ageBand: "1-2" },
+    });
+  };
+
   const submitTyped = (e: FormEvent) => {
     e.preventDefault();
     const isbn = cleanIsbn(typed);
@@ -98,7 +120,7 @@ function ScanScreen({ user }: { user: User }) {
 
   return (
     <div className="scan-screen">
-      <Scanner active={phase.k === "scanning" && !typing} onIsbn={handleIsbn} />
+      <Scanner active={phase.k === "scanning" && !typing} onCode={handleCode} />
 
       <div className="scan-top">
         <Link href="/" className="icon-btn round" aria-label="Close scanner"><CloseIcon /></Link>
@@ -134,6 +156,21 @@ function ScanScreen({ user }: { user: User }) {
           <div className="stack">
             <h2 className="sheet-title">Looking it up…</h2>
             <p className="sheet-note">ISBN {phase.isbn}</p>
+          </div>
+        )}
+
+        {phase.k === "notIsbn" && (
+          <div className="stack">
+            <h2 className="sheet-title">That's a shop barcode, not an ISBN</h2>
+            <p className="sheet-note">
+              Some books, like Jellycat ones, have a product barcode on the back. Look for the ISBN in small print, usually starting 978,
+              on the back or inside the cover. If there isn't one, add the book by hand.
+            </p>
+            <div className="btn-row">
+              <button type="button" className="btn btn-dark" onClick={() => { setPhase({ k: "scanning" }); setTyping(true); }}>Type the ISBN</button>
+              <button type="button" className="btn btn-outline" onClick={() => addByHand(phase.code)}>Add it by hand</button>
+            </div>
+            <button type="button" className="text-btn" onClick={again}>Scan again</button>
           </div>
         )}
 
@@ -203,7 +240,7 @@ function DraftForm({ draft, found, saving, onChange, onSave, onCancel }: {
       ) : (
         <>
           <h2 className="sheet-title">New book, no details found</h2>
-          <p className="sheet-note">Add the title and author yourself. ISBN {draft.isbn}</p>
+          <p className="sheet-note">Add the title and author yourself. {/^97[89]/.test(draft.isbn) ? "ISBN" : "Barcode"} {draft.isbn}</p>
           <label htmlFor="title" className="field-label">Title</label>
           <input id="title" className="field" required value={draft.title} onChange={(e) => onChange({ ...draft, title: e.target.value })} />
           <label htmlFor="author" className="field-label">Author</label>

@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { cleanIsbn } from "@/lib/isbn";
+import { ean13Valid } from "@/lib/isbn";
 import { TorchIcon } from "./Icons";
 
 type Detector = { detect: (src: HTMLVideoElement) => Promise<{ rawValue: string }[]> };
 
 /**
  * Camera barcode scanner. Uses the browser's BarcodeDetector (Chrome on Android)
- * and falls back to ZXing (Safari on iPhone). Calls onIsbn once per valid book barcode.
+ * and falls back to ZXing (Safari on iPhone). Calls onCode once per valid EAN-13 barcode
+ * (ISBN or not; the scan page decides what to do with non-book barcodes).
  */
-export function Scanner({ active, onIsbn }: { active: boolean; onIsbn: (isbn: string) => void }) {
+export function Scanner({ active, onCode }: { active: boolean; onCode: (code: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const trackRef = useRef<MediaStreamTrack | null>(null);
-  const onIsbnRef = useRef(onIsbn);
-  onIsbnRef.current = onIsbn;
+  const onCodeRef = useRef(onCode);
+  onCodeRef.current = onCode;
   const [error, setError] = useState<string | null>(null);
   const [torch, setTorch] = useState<boolean | null>(null);
 
@@ -26,11 +27,12 @@ export function Scanner({ active, onIsbn }: { active: boolean; onIsbn: (isbn: st
     let zxingStop: (() => void) | undefined;
 
     const found = (raw: string) => {
-      const isbn = cleanIsbn(raw);
-      if (!isbn || stopped) return false;
+      let code = raw.replace(/\D/g, "");
+      if (code.length === 12) code = "0" + code; // UPC-A is an EAN-13 with a leading zero
+      if (!ean13Valid(code) || stopped) return false;
       stopped = true;
       navigator.vibrate?.(60);
-      onIsbnRef.current(isbn);
+      onCodeRef.current(code);
       return true;
     };
 
@@ -51,7 +53,7 @@ export function Scanner({ active, onIsbn }: { active: boolean; onIsbn: (isbn: st
         const Native = (window as unknown as { BarcodeDetector?: { new (o: object): Detector; getSupportedFormats?: () => Promise<string[]> } }).BarcodeDetector;
         const formats = Native?.getSupportedFormats ? await Native.getSupportedFormats() : [];
         if (Native && formats.includes("ean_13")) {
-          const detector = new Native({ formats: ["ean_13"] });
+          const detector = new Native({ formats: ["ean_13", "upc_a"].filter((f) => formats.includes(f)) });
           const tick = async () => {
             if (stopped) return;
             try {
@@ -67,7 +69,7 @@ export function Scanner({ active, onIsbn }: { active: boolean; onIsbn: (isbn: st
             import("@zxing/library"),
           ]);
           const hints = new Map();
-          hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13]);
+          hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.UPC_A]);
           const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 150 });
           const controls = await reader.decodeFromVideoElement(video, (result) => {
             if (result) found(result.getText());
