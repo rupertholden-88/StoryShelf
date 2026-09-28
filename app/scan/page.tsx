@@ -55,6 +55,7 @@ function ScanScreen({ user }: { user: User }) {
           isbn,
           title: res?.title ?? "",
           authors: res?.authors ?? [],
+          illustrators: res?.illustrators ?? [],
           coverUrl: res?.coverUrl ?? null,
           subjects,
           pages: res?.pages ?? null,
@@ -177,13 +178,14 @@ function ScanScreen({ user }: { user: User }) {
   );
 }
 
-function BookHead({ book, heading }: { book: Pick<Book, "isbn" | "title" | "authors" | "coverUrl" | "favourite">; heading: string }) {
+function BookHead({ book, heading }: { book: Pick<Book, "isbn" | "title" | "authors" | "coverUrl" | "favourite"> & { illustrators?: string[] }; heading: string }) {
   return (
     <div className="book-head">
       <CoverArt book={book} width={64} height={84} />
       <div>
         <h2 className="sheet-title">{heading}</h2>
         <p className="sheet-book">{book.title}{book.authors[0] ? `, ${book.authors[0]}` : ""}</p>
+        {book.illustrators?.[0] && <p className="sheet-note">Illustrated by {book.illustrators.join(", ")}</p>}
       </div>
     </div>
   );
@@ -206,6 +208,8 @@ function DraftForm({ draft, found, saving, onChange, onSave, onCancel }: {
           <input id="title" className="field" required value={draft.title} onChange={(e) => onChange({ ...draft, title: e.target.value })} />
           <label htmlFor="author" className="field-label">Author</label>
           <input id="author" className="field" value={draft.authors[0] ?? ""} onChange={(e) => onChange({ ...draft, authors: e.target.value ? [e.target.value] : [] })} />
+          <label htmlFor="illustrator" className="field-label">Illustrator</label>
+          <input id="illustrator" className="field" value={draft.illustrators[0] ?? ""} onChange={(e) => onChange({ ...draft, illustrators: e.target.value ? [e.target.value] : [] })} />
         </>
       )}
       <div className="field-pair">

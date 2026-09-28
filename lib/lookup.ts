@@ -2,6 +2,7 @@ export interface LookupResult {
   isbn: string;
   title: string;
   authors: string[];
+  illustrators: string[];
   coverUrl: string | null;
   subjects: string[];
   pages: number | null;
@@ -41,13 +42,7 @@ export async function lookupIsbn(isbn: string): Promise<LookupResult | null> {
   return {
     isbn,
     title,
-    authors: firstNonEmpty(
-      d?.authors?.map((a: { name: string }) => a.name),
-      w?.author_name,
-      g?.authors,
-      fromByStatement(d?.by_statement ?? e?.by_statement),
-      e?.contributors?.map((c: { name: string }) => c.name)
-    ),
+    ...splitPeople(d, e, w, g),
     coverUrl:
       d?.cover?.medium ??
       (w?.cover_i ? `https://covers.openlibrary.org/b/id/${w.cover_i}-M.jpg` : null) ??
@@ -64,10 +59,50 @@ function firstNonEmpty(...lists: (string[] | undefined)[]): string[] {
   return [];
 }
 
-/** "written by Anna Milbourne ; illustrated by Simona Dimitri" -> ["Anna Milbourne"] */
-function fromByStatement(by: unknown): string[] | undefined {
-  if (typeof by !== "string") return undefined;
+type Person = { name?: string; role?: string };
+
+/** Works out authors and illustrators from whichever sources have them. */
+function splitPeople(d: any, e: any, w: any, g: any): { authors: string[]; illustrators: string[] } {
+  const by = parseByStatement(d?.by_statement ?? e?.by_statement);
+  const contributors: Person[] = Array.isArray(e?.contributors) ? e.contributors : [];
+  const contribIllustrators = contributors.filter((c) => /illustrat|artist|pictures/i.test(c.role || "")).map((c) => c.name || "");
+  const contribAuthors = contributors.filter((c) => /author|writ|text/i.test(c.role || "")).map((c) => c.name || "");
+
+  const illustrators = dedupe(firstNonEmpty(by.illustrators, contribIllustrators));
+  const isIllustrator = (n: string) => illustrators.some((i) => same(i, n));
+
+  // Open Library and Google often list the illustrator as a second author; keep them as illustrator only.
+  const candidates = firstNonEmpty(
+    d?.authors?.map((a: { name: string }) => a.name),
+    w?.author_name,
+    g?.authors,
+    by.authors,
+    contribAuthors
+  );
+  let authors = dedupe(candidates.filter((n) => !isIllustrator(n)));
+  if (!authors.length && candidates.length) authors = dedupe(candidates.slice(0, 1));
+  return { authors, illustrators: illustrators.filter((i) => !authors.some((a) => same(a, i))) };
+}
+
+/** "written by Anna Milbourne ; illustrated by Simona Dimitri" */
+export function parseByStatement(by: unknown): { authors: string[]; illustrators: string[] } {
+  if (typeof by !== "string") return { authors: [], illustrators: [] };
+  const ill = by.match(/illustrat\w*\s+(?:by\s+)?([^;\[\]]+)/i)?.[1];
   const first = by.split(/[;\[]|illustrat/i)[0];
-  const name = first.replace(/^.*?\bby\b/i, "").replace(/[.,:\s]+$/, "").trim();
-  return name && name.length < 60 ? name.split(/\s+and\s+|\s*&\s*/).map((n) => n.trim()).filter(Boolean) : undefined;
+  const auth = first.replace(/^.*?\bby\b/i, "");
+  return { authors: names(auth), illustrators: names(ill) };
+}
+
+function names(s: string | undefined): string[] {
+  if (!s) return [];
+  const clean = s.replace(/[.,:\s]+$/, "").replace(/^[,:\s]+/, "").trim();
+  if (!clean || clean.length > 80) return [];
+  return clean.split(/\s+and\s+|\s*&\s*|,\s*/).map((n) => n.trim()).filter((n) => n.length > 1);
+}
+
+const same = (a: string, b: string) => a.toLowerCase().replace(/[^a-z]/g, "") === b.toLowerCase().replace(/[^a-z]/g, "");
+function dedupe(list: string[]): string[] {
+  const out: string[] = [];
+  for (const n of list) if (n && !out.some((o) => same(o, n))) out.push(n);
+  return out;
 }

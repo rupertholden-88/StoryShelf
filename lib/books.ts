@@ -18,6 +18,7 @@ function withDefaults(data: Partial<Book>, isbn: string): Book {
     isbn,
     title: data.title ?? "Untitled",
     authors: data.authors ?? [],
+    illustrators: data.illustrators ?? [],
     coverUrl: data.coverUrl ?? null,
     subjects: data.subjects ?? [],
     theme: data.theme ?? "Stories",
@@ -30,6 +31,7 @@ function withDefaults(data: Partial<Book>, isbn: string): Book {
     addedAt: data.addedAt ?? null,
     addedBy: data.addedBy,
     lookedUpAt: data.lookedUpAt,
+    lookedUpV: data.lookedUpV,
   };
 }
 
@@ -66,7 +68,7 @@ export async function getBook(isbn: string): Promise<Book | null> {
   return snap.exists() ? withDefaults(snap.data() as Partial<Book>, snap.id) : null;
 }
 
-export type NewBook = Omit<Book, "favourite" | "readCount" | "ratings" | "addedAt" | "addedBy">;
+export type NewBook = Omit<Book, "favourite" | "readCount" | "ratings" | "addedAt" | "addedBy" | "lookedUpAt" | "lookedUpV">;
 
 export async function addBook(b: NewBook, addedBy: string) {
   await setDoc(bookRef(b.isbn), {

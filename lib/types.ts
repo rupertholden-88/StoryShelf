@@ -30,6 +30,7 @@ export interface Book {
   isbn: string;
   title: string;
   authors: string[];
+  illustrators: string[];
   coverUrl: string | null;
   subjects: string[];
   theme: string;
@@ -43,6 +44,8 @@ export interface Book {
   addedBy?: string;
   /** When missing details were last looked up automatically (ms). */
   lookedUpAt?: number;
+  /** Version of the lookup that last ran, so improvements re-check older books once. */
+  lookedUpV?: number;
 }
 
 export interface Household {

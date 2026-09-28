@@ -66,6 +66,7 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
       const patch: Partial<Book> = {};
       if (res.coverUrl && !book.coverUrl) patch.coverUrl = res.coverUrl;
       if (res.authors.length && !book.authors.length) patch.authors = res.authors;
+      if (res.illustrators.length && !book.illustrators.length) patch.illustrators = res.illustrators;
       if (res.subjects.length > book.subjects.length) patch.subjects = res.subjects;
       if (res.pages && !book.pages) patch.pages = res.pages;
       if (Object.keys(patch).length) await updateBook(book.isbn, patch);
@@ -93,6 +94,7 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
           <div className="detail-titles">
             <h1 className="detail-title">{book.title}</h1>
             <p className="detail-author">{book.authors.join(", ") || "Unknown author"}</p>
+            {book.illustrators.length > 0 && <p className="detail-illustrator">Illustrated by {book.illustrators.join(", ")}</p>}
             <div className="tag-row">
               <span className="shelf-label">{book.theme}</span>
               {ageLabel && <span className="shelf-label">{ageLabel}</span>}
@@ -117,6 +119,11 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
             <input id="author" className="field" defaultValue={book.authors.join(", ")} onBlur={(e) => {
               const authors = e.target.value.split(",").map((a) => a.trim()).filter(Boolean);
               if (authors.join(", ") !== book.authors.join(", ")) updateBook(book.isbn, { authors });
+            }} />
+            <label htmlFor="illustrator" className="field-label">Illustrator</label>
+            <input id="illustrator" className="field" defaultValue={book.illustrators.join(", ")} onBlur={(e) => {
+              const illustrators = e.target.value.split(",").map((a) => a.trim()).filter(Boolean);
+              if (illustrators.join(", ") !== book.illustrators.join(", ")) updateBook(book.isbn, { illustrators });
             }} />
             <div className="field-pair">
               <div>

@@ -32,7 +32,7 @@ function Library({ household }: { household: Household }) {
 
   const shelves = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = q ? books.filter((b) => (b.title + " " + b.authors.join(" ")).toLowerCase().includes(q)) : books;
+    const list = q ? books.filter((b) => (b.title + " " + b.authors.join(" ") + " " + b.illustrators.join(" ")).toLowerCase().includes(q)) : books;
     return arrange(list, mode, q ? null : nowBand);
   }, [books, mode, nowBand, query]);
 
@@ -56,8 +56,8 @@ function Library({ household }: { household: Household }) {
         </div>
         {searching && (
           <>
-            <label htmlFor="q" className="visually-hidden">Search titles or authors</label>
-            <input id="q" className="search" type="search" placeholder="Search titles or authors" autoFocus value={query} onChange={(e) => setQuery(e.target.value)} />
+            <label htmlFor="q" className="visually-hidden">Search titles, authors or illustrators</label>
+            <input id="q" className="search" type="search" placeholder="Search titles, authors or illustrators" autoFocus value={query} onChange={(e) => setQuery(e.target.value)} />
           </>
         )}
         <div className="controls">

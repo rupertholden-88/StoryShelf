@@ -72,6 +72,10 @@ export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promi
     if (author && !/various|anonymous/i.test(author)) {
       jobs.push(search(`author=${encodeURIComponent(author)}`).then((docs) => add(docs, 3, `Same author as ${seed.title}`)));
     }
+    const illustrator = seed.illustrators?.[0];
+    if (illustrator && illustrator !== author) {
+      jobs.push(search(`author=${encodeURIComponent(illustrator)}`).then((docs) => add(docs, 2, `Same illustrator as ${seed.title}`)));
+    }
     for (const s of seed.subjects.filter(useful).slice(0, 2)) {
       jobs.push(
         search(`subject=${encodeURIComponent(s.toLowerCase())}`).then((docs) => add(docs, 2, `Like ${seed.title}: ${s.toLowerCase()}`))
