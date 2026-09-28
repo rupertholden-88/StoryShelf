@@ -1,5 +1,5 @@
 import { guessAge, guessFormat } from "./classify";
-import { pickIsbn } from "./isbn";
+import { editionCover, pickEdition } from "./isbn";
 import { LOOKUP_TIMEOUT_MS } from "./lookup";
 import { KID, titleKey } from "./recommend";
 import type { Book, Rec } from "./types";
@@ -35,12 +35,13 @@ export async function searchBooks(q: string, owned: Book[]): Promise<Hit[]> {
     if (!key || ownedTitles.has(key) || seen.has(key)) continue;
     seen.add(key);
     const subjects: string[] = d.subject ?? [];
+    const edition = pickEdition(d.isbn);
     hits.push({
       key,
-      isbn: pickIsbn(d.isbn),
+      isbn: edition.isbn,
       title: d.title,
       author: d.author_name?.[0] ?? "Unknown author",
-      coverUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : null,
+      coverUrl: editionCover(edition, d.cover_i),
       ageBand: guessAge(guessFormat(null, null, subjects), subjects, null),
       why: "Found by search",
       score: 0,

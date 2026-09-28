@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanIsbn, coverCandidates, ean13Valid, isbn13to10, pickIsbn } from "@/lib/isbn";
+import { cleanIsbn, coverCandidates, ean13Valid, editionCover, isbn13to10, pickEdition } from "@/lib/isbn";
 
 describe("cleanIsbn", () => {
   it("accepts a valid ISBN-13 with punctuation", () => {
@@ -34,9 +34,25 @@ describe("isbn13to10", () => {
   });
 });
 
-it("pickIsbn takes the first valid ISBN", () => {
-  expect(pickIsbn(["junk", "0143117165", "9780804429573"])).toBe("9780143117162");
-  expect(pickIsbn(undefined)).toBeNull();
+describe("pickEdition", () => {
+  it("prefers an English edition over a translation listed first", () => {
+    // That's Not My Kitten: French "Où est mon chaton ?" (978-2) listed before the UK edition (978-0).
+    expect(pickEdition(["9782746074989", "junk", "0746085702"])).toEqual({ isbn: "9780746085707", english: true });
+  });
+  it("counts 978-1 and 979-8 as English", () => {
+    expect(pickEdition(["9781409580959"]).english).toBe(true);
+    expect(pickEdition(["9798886631234"]).english).toBe(true);
+  });
+  it("falls back to the first valid ISBN, marked not English", () => {
+    expect(pickEdition(["9788467580181", "9782746074989"])).toEqual({ isbn: "9788467580181", english: false });
+    expect(pickEdition(undefined)).toEqual({ isbn: null, english: false });
+  });
+});
+
+it("editionCover only uses the work's cover when there's no English edition", () => {
+  expect(editionCover({ english: true }, 42)).toBeNull();
+  expect(editionCover({ english: false }, 42)).toBe("https://covers.openlibrary.org/b/id/42-M.jpg");
+  expect(editionCover({ english: false }, undefined)).toBeNull();
 });
 
 it("coverCandidates tries the saved cover, then Open Library, then Amazon", () => {

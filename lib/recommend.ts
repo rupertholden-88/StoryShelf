@@ -1,5 +1,5 @@
 import { guessAge, guessFormat } from "./classify";
-import { pickIsbn } from "./isbn";
+import { editionCover, pickEdition } from "./isbn";
 import { LOOKUP_TIMEOUT_MS } from "./lookup";
 import type { Book, Rec } from "./types";
 
@@ -39,7 +39,8 @@ export function pickSeeds(books: Book[]): Book[] {
 }
 
 export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promise<Rec[]> {
-  const cacheKey = "nb-recs:" + seeds.map((s) => s.isbn).join(",") + ":" + owned.length + ":" + limit;
+  // v2: English editions only (earlier results could hold French/Spanish covers).
+  const cacheKey = "nb-recs2:" + seeds.map((s) => s.isbn).join(",") + ":" + owned.length + ":" + limit;
   try {
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) return JSON.parse(cached);
@@ -52,6 +53,9 @@ export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promi
     for (const d of docs) {
       // Records with no author are usually incomplete (and look it), so they aren't suggested.
       if (!d.title || !d.author_name?.length) continue;
+      // Only translations (no English ISBN): the cover and shop links would be for a foreign edition.
+      const edition = pickEdition(d.isbn);
+      if (edition.isbn && !edition.english) continue;
       const key = norm(d.title);
       if (ownedTitles.has(key)) continue;
       const subjects: string[] = d.subject ?? [];
@@ -63,10 +67,10 @@ export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promi
       }
       found.set(key, {
         key,
-        isbn: pickIsbn(d.isbn),
+        isbn: edition.isbn,
         title: d.title,
         author: d.author_name[0],
-        coverUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : null,
+        coverUrl: editionCover(edition, d.cover_i),
         ageBand: guessAge(guessFormat(null, null, subjects), subjects, null),
         why,
         // A cover makes a suggestion far easier to recognise, so those edge ahead.

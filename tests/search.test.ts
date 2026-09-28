@@ -42,7 +42,8 @@ describe("searchBooks", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ docs }))));
     const hits = await searchBooks("gruffalo", [book({ title: "The Gruffalo" })]);
     expect(hits.map((h) => [h.title, h.forChildren])).toEqual([["The Gruffalo's Child", true], ["Gruffalo Crumble", false]]);
-    expect(hits[0]).toMatchObject({ isbn: "9781405020466", coverUrl: "https://covers.openlibrary.org/b/id/42-M.jpg", author: "Julia Donaldson" });
+    // English edition: the cover comes from its ISBN, not the work's (possibly foreign) cover.
+    expect(hits[0]).toMatchObject({ isbn: "9781405020466", coverUrl: null, author: "Julia Donaldson" });
     expect(hits[1]).toMatchObject({ isbn: null, year: 2015, author: "A Chef" });
   });
 
