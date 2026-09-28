@@ -28,10 +28,13 @@ export function CoverArt({ book, width, height, className = "" }: {
 }) {
   const candidates = coverCandidates(book.isbn, book.coverUrl);
   const [idx, setIdx] = useState(0);
+  const [ratio, setRatio] = useState<number | null>(null);
   const { bg, fg } = bookColours(book.isbn);
-  const style: CSSProperties = { width, height, background: bg, color: fg };
   const src = candidates[idx];
-  const next = () => setIdx((i) => i + 1);
+  // Once the real cover loads, the book takes the cover's own shape (square board books, wide landscape books).
+  const shapedWidth = src && ratio ? Math.round(Math.min(Math.max(height * ratio, height * 0.55), height * 1.45)) : width;
+  const style: CSSProperties = { width: shapedWidth, height, background: bg, color: fg };
+  const next = () => { setRatio(null); setIdx((i) => i + 1); };
   return (
     <span className={`cover ${className}`} style={style}>
       {src ? (
@@ -44,7 +47,11 @@ export function CoverArt({ book, width, height, className = "" }: {
           referrerPolicy="no-referrer"
           onError={next}
           // Amazon and some others return a 1×1 placeholder instead of a 404.
-          onLoad={(e) => { if (e.currentTarget.naturalWidth < 20) next(); }}
+          onLoad={(e) => {
+            const img = e.currentTarget;
+            if (img.naturalWidth < 20) next();
+            else setRatio(img.naturalWidth / img.naturalHeight);
+          }}
         />
       ) : (
         <>
