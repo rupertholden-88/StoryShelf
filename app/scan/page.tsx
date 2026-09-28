@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import type { User } from "firebase/auth";
 import { CoverArt } from "@/components/BookArt";
 import { Gate } from "@/components/Gate";
@@ -71,6 +71,19 @@ function ScanScreen({ user }: { user: User }) {
     }
   };
 
+  // Arriving from search with a book picked: look it up straight away instead of scanning.
+  // The camera waits for this check so it doesn't start (and ask permission) for nothing.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const isbn = cleanIsbn(new URLSearchParams(window.location.search).get("isbn") ?? "");
+    if (isbn) {
+      window.history.replaceState(window.history.state, "", "/scan");
+      handleIsbn(isbn);
+    }
+    setReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleCode = (code: string) => {
     const isbn = cleanIsbn(code);
     if (isbn) handleIsbn(isbn);
@@ -120,7 +133,7 @@ function ScanScreen({ user }: { user: User }) {
 
   return (
     <div className="scan-screen">
-      <Scanner active={phase.k === "scanning" && !typing} onCode={handleCode} />
+      <Scanner active={ready && phase.k === "scanning" && !typing} onCode={handleCode} />
 
       <div className="scan-top">
         <Link href="/" className="icon-btn round" aria-label="Close scanner"><CloseIcon /></Link>
@@ -147,7 +160,10 @@ function ScanScreen({ user }: { user: User }) {
             <div className="stack">
               <h2 className="sheet-title">Point at the barcode</h2>
               <p className="sheet-note">It's on the back cover, usually with ISBN printed above it.</p>
-              <button type="button" className="btn btn-outline" onClick={() => setTyping(true)}>Type the ISBN instead</button>
+              <div className="btn-row">
+                <button type="button" className="btn btn-outline" onClick={() => setTyping(true)}>Type the ISBN</button>
+                <Link href="/search" className="btn btn-outline">Search by title</Link>
+              </div>
             </div>
           )
         )}
@@ -170,6 +186,7 @@ function ScanScreen({ user }: { user: User }) {
               <button type="button" className="btn btn-dark" onClick={() => { setPhase({ k: "scanning" }); setTyping(true); }}>Type the ISBN</button>
               <button type="button" className="btn btn-outline" onClick={() => addByHand(phase.code)}>Add it by hand</button>
             </div>
+            <Link href="/search" className="text-btn">Search for it by title</Link>
             <button type="button" className="text-btn" onClick={again}>Scan again</button>
           </div>
         )}

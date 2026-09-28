@@ -3,7 +3,7 @@ import { pickIsbn } from "./isbn";
 import { LOOKUP_TIMEOUT_MS } from "./lookup";
 import type { Book, Rec } from "./types";
 
-const KID = /juvenile|children|picture book|board book|toddler|baby|nursery|preschool/i;
+export const KID = /juvenile|children|picture book|board book|toddler|baby|nursery|preschool/i;
 const GENERIC = /^(fiction|juvenile fiction|juvenile literature|children's (fiction|stories|books)|picture books( for children)?|board books|stories in rhyme|english language|large type books|accessible book|protected daisy|in library|toy and movable books|lift-the-flap books|readers)$/i;
 
 /** Edition-independent key for a title; suggestions and saved books are matched on it. */

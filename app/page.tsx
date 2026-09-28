@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { Gate } from "@/components/Gate";
 import { CoversIcon, SearchIcon, SpinesIcon } from "@/components/Icons";
@@ -24,17 +24,11 @@ function Library({ household }: { household: Household }) {
   useBackfill(books);
   const [mode, setMode] = usePersisted<Mode>("nb-mode", "theme", ["theme", "age", "author"]);
   const [view, setView] = usePersisted<View>("nb-view", "spines", ["spines", "covers"]);
-  const [searching, setSearching] = useState(false);
-  const [query, setQuery] = useState("");
 
   const childName = household.childName || "Our";
   const nowBand = bandForMonths(childAgeMonths(household));
 
-  const shelves = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const list = q ? books.filter((b) => (b.title + " " + b.authors.join(" ") + " " + b.illustrators.join(" ")).toLowerCase().includes(q)) : books;
-    return arrange(list, mode, q ? null : nowBand);
-  }, [books, mode, nowBand, query]);
+  const shelves = useMemo(() => arrange(books, mode, nowBand), [books, mode, nowBand]);
 
   return (
     <>
@@ -44,22 +38,10 @@ function Library({ household }: { household: Household }) {
             <h1 className="lib-title">{household.childName ? `${childName}'s library` : "Our library"}</h1>
             <p className="lib-sub">{loading ? "Counting books…" : `${books.length} ${books.length === 1 ? "book" : "books"}`}</p>
           </div>
-          <button
-            type="button"
-            className="icon-btn round"
-            aria-label={searching ? "Close search" : "Search the library"}
-            aria-expanded={searching}
-            onClick={() => { setSearching(!searching); setQuery(""); }}
-          >
+          <Link href="/search" className="icon-btn round" aria-label="Search">
             <SearchIcon />
-          </button>
+          </Link>
         </div>
-        {searching && (
-          <>
-            <label htmlFor="q" className="visually-hidden">Search titles, authors or illustrators</label>
-            <input id="q" className="search" type="search" placeholder="Search titles, authors or illustrators" autoFocus value={query} onChange={(e) => setQuery(e.target.value)} />
-          </>
-        )}
         <div className="controls">
           <div className="segmented" role="group" aria-label="Arrange shelves by">
             {MODES.map(([id, label]) => (
@@ -79,8 +61,6 @@ function Library({ household }: { household: Household }) {
             <p>The shelves are empty. Scan the barcode on the back of a book to add it.</p>
             <Link href="/scan" className="btn btn-mustard">Scan a book</Link>
           </div>
-        ) : !loading && shelves.length === 0 ? (
-          <div className="bay empty-case"><p>No books match “{query}”.</p></div>
         ) : (
           shelves.map((s) => <Shelf key={s.id} shelf={s} view={view} childName={childName} />)
         )}

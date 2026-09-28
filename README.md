@@ -17,8 +17,11 @@ Next.js (App Router) PWA · Firebase Auth + Firestore · hosted on Vercel.
 - **Suggestions:** based on favourites and 4–5 star books, searched on Open Library by author and subject,
   filtered to children's books and anything you already own.
 - **Shops:** Amazon UK links search by ISBN (add an Associates tag if you have one). eBay prices come from
-  the eBay Browse API through `/api/ebay`, so the keys stay on the server. The route only answers signed-in
-  household members.
+  the eBay Browse API through `/api/ebay`, so the keys stay on the server. Only UK sellers are shown, cheapest
+  including postage. The route only answers signed-in household members.
+- **Search:** the magnifier on the Library opens a search of your shelves (title, author, illustrator, shelf
+  or subject) and of Open Library, children's books first. Any result with an ISBN can be added to the shelf
+  without scanning, saved, or looked up on Amazon/eBay UK.
 - **Saved books:** bookmark a suggestion to keep it under For you → Saved. It drops off the list once you scan
   any edition of it.
 - **Offline:** the library is cached on the phone, so it opens instantly and still works without signal.
