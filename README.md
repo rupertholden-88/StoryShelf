@@ -23,6 +23,10 @@ Next.js (App Router) PWA · Firebase Auth + Firestore · hosted on Vercel.
   any edition of it.
 - **Offline:** the library is cached on the phone, so it opens instantly and still works without signal.
 
+- **Logo and splash:** the illustrated logo is drawn in code by `scripts/make-logo.mjs`, which writes
+  `public/logo.svg` and `components/logoSvg.ts`. Edit the script and run `npm run logo`. The splash animates the
+  logo's parts (frame, books, bird, stars, title) with CSS in `app/globals.css`.
+
 ## Setup
 
 1. **Firebase project**

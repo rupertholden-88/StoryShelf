@@ -5,6 +5,7 @@ import type { User } from "firebase/auth";
 import { useAuth } from "@/lib/auth";
 import { useHousehold } from "@/lib/household";
 import type { Household } from "@/lib/types";
+import { LOGO_SVG } from "./logoSvg";
 
 export function Gate({ children }: { children: (ctx: { user: User; household: Household }) => ReactNode }) {
   const { user, loading, error, signIn, signOut } = useAuth();
@@ -16,8 +17,9 @@ export function Gate({ children }: { children: (ctx: { user: User; household: Ho
 
   if (!user) {
     return (
-      <div className="gate">
-        <h1 className="gate-title">Story Shelf</h1>
+      <div className="gate gate-signin">
+        <div className="gate-logo" dangerouslySetInnerHTML={{ __html: LOGO_SVG }} />
+        <h1 className="visually-hidden">Story Shelf</h1>
         <p className="gate-note">Sign in to see the bookshelf, scan new books and rate old favourites.</p>
         <button type="button" className="btn btn-light" onClick={() => signIn()}>Sign in with Google</button>
         {error && <p className="gate-error" role="alert">{error}</p>}

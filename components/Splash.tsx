@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { LOGO_SVG } from "./logoSvg";
 
 const SEEN = "nb-splash";
-const MIN_MS = 2600;
-const MIN_MS_REDUCED = 700;
+const MIN_MS = 3000;
+const MIN_MS_REDUCED = 1200;
 const FADE_MS = 500;
 
 /**
- * A storybook opening on a shelf plank while the app signs in. Server-rendered so it shows
- * before any JavaScript runs; plays once per session and stays until sign-in has settled.
+ * The Story Shelf logo drawing itself while the app signs in: the frame traces round, the books
+ * pop up onto the shelf, the bird hops on and waves its wand, then the title glows in.
+ * Server-rendered so it shows before any JavaScript runs; plays once per session and stays
+ * until sign-in has settled.
  */
 export function Splash() {
   const { loading } = useAuth();
@@ -46,24 +49,7 @@ export function Splash() {
 
   return (
     <div className={`splash${phase === "leaving" ? " leaving" : ""}`} aria-hidden="true">
-      <div className="splash-scene">
-        <div className="splash-sparks">
-          {[0, 1, 2, 3, 4, 5].map((i) => <span key={i} className={`spark s${i}`}>✦</span>)}
-        </div>
-        <div className="splash-book">
-          <div className="sb-page" />
-          <div className="sb-cover">
-            <div className="sb-cover-front"><span className="sb-cover-title" /><span className="sb-cover-star">✦</span></div>
-            <div className="sb-cover-back" />
-          </div>
-          <div className="sb-leaf l1" />
-          <div className="sb-leaf l2" />
-          <div className="sb-leaf l3" />
-        </div>
-        <div className="splash-plank" />
-      </div>
-      <p className="splash-once">Once upon a time…</p>
-      <p className="splash-title">Story Shelf</p>
+      <div className="splash-logo" dangerouslySetInnerHTML={{ __html: LOGO_SVG }} />
     </div>
   );
 }
