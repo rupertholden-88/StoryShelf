@@ -37,8 +37,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en-GB" suppressHydrationWarning>
       <head>
-        {/* Hide the splash before first paint if it has already played this session. */}
-        <script dangerouslySetInnerHTML={{ __html: `try{if(sessionStorage.getItem("nb-splash")==="1")document.documentElement.dataset.splash="seen"}catch(e){}` }} />
+        {/* Before first paint: no splash on reloads this session, and only a quick one if it already played today. */}
+        <script dangerouslySetInnerHTML={{ __html: `try{var d=document.documentElement.dataset;if(sessionStorage.getItem("nb-splash")==="1")d.splash="seen";else if(localStorage.getItem("nb-splash-day")===new Date().toDateString())d.splash="quick"}catch(e){}` }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}

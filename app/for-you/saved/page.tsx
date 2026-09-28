@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AffiliateNote } from "@/components/AffiliateNote";
 import { BottomNav } from "@/components/BottomNav";
 import { Gate } from "@/components/Gate";
 import { BackIcon } from "@/components/Icons";
@@ -30,6 +31,7 @@ function Saved() {
         ) : (
           items.map((r) => <RecCard key={wishId(r)} rec={r} wished onWish={(on) => toggleWishlist(r, on)} />)
         )}
+        <AffiliateNote />
       </main>
 
       <BottomNav active="foryou" />

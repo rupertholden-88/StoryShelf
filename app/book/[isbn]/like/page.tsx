@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AffiliateNote } from "@/components/AffiliateNote";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
@@ -61,6 +62,7 @@ function MoreLike({ isbn }: { isbn: string }) {
         ) : (
           recs.map((r) => <HitCard key={r.key} rec={r} wished={wished.has(wishId(r))} showWhy />)
         )}
+        <AffiliateNote />
       </main>
 
       <BottomNav active="library" />

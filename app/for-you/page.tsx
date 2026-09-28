@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AffiliateNote } from "@/components/AffiliateNote";
 import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { Gate } from "@/components/Gate";
@@ -68,6 +69,7 @@ function ForYou({ household }: { household: Household }) {
             <RecCard key={r.key} rec={r} wished={wished.has(wishId(r))} onWish={(on) => toggleWishlist(r, on)} />
           ))
         )}
+        <AffiliateNote />
       </main>
 
       <BottomNav active="foryou" />

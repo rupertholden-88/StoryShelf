@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AffiliateNote } from "@/components/AffiliateNote";
 import { useEffect, useMemo, useState } from "react";
 import { CoverArt } from "@/components/BookArt";
 import { BottomNav } from "@/components/BottomNav";
@@ -125,6 +126,7 @@ function Search() {
             </section>
           </>
         )}
+        <AffiliateNote />
       </main>
 
       <BottomNav active="library" />

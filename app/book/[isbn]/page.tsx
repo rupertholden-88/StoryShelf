@@ -10,7 +10,7 @@ import { BackIcon, HeartIcon } from "@/components/Icons";
 import { MoreByLinks } from "@/components/MoreByLinks";
 import { Stars } from "@/components/Stars";
 import { SyncedField } from "@/components/SyncedField";
-import { callNumber } from "@/lib/appearance";
+import { callNumber, surname } from "@/lib/appearance";
 import { firstName } from "@/lib/auth";
 import { rateBook, readAgain, removeBook, updateBook, useBook, useBooks } from "@/lib/books";
 import { lookupIsbn } from "@/lib/lookup";
@@ -111,7 +111,14 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
 
       <section className="catalogue-card" aria-label="Catalogue card">
         <div className="card-head">
-          <span className="call-no">{callNumber(book)}</span>
+          {callNumber(book) ? (
+            <span className="call-no-wrap">
+              <span className="call-no">{callNumber(book)}</span>
+              <span className="filed-under">Filed under {surname(book)}</span>
+            </span>
+          ) : (
+            <span className="filed-under">Add an author to file it on the shelves</span>
+          )}
           <span className="isbn">{/^97[89]/.test(book.isbn) ? "ISBN" : "Barcode"} {book.isbn}</span>
         </div>
 

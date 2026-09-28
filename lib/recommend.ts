@@ -50,7 +50,8 @@ export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promi
 
   const add = (docs: any[], weight: number, why: string) => {
     for (const d of docs) {
-      if (!d.title) continue;
+      // Records with no author are usually incomplete (and look it), so they aren't suggested.
+      if (!d.title || !d.author_name?.length) continue;
       const key = norm(d.title);
       if (ownedTitles.has(key)) continue;
       const subjects: string[] = d.subject ?? [];
@@ -64,11 +65,12 @@ export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promi
         key,
         isbn: pickIsbn(d.isbn),
         title: d.title,
-        author: d.author_name?.[0] ?? "Unknown author",
+        author: d.author_name[0],
         coverUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : null,
         ageBand: guessAge(guessFormat(null, null, subjects), subjects, null),
         why,
-        score: weight,
+        // A cover makes a suggestion far easier to recognise, so those edge ahead.
+        score: weight + (d.cover_i ? 1 : 0),
       });
     }
   };

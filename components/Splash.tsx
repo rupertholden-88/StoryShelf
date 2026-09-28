@@ -5,15 +5,17 @@ import { useAuth } from "@/lib/auth";
 import { LOGO_SVG } from "./logoSvg";
 
 const SEEN = "nb-splash";
+const DAY = "nb-splash-day";
 const MIN_MS = 3000;
-const MIN_MS_REDUCED = 1200;
+/** Later launches the same day, and reduced motion: the finished logo, briefly. */
+const MIN_MS_QUICK = 900;
 const FADE_MS = 500;
 
 /**
  * The Story Shelf logo drawing itself while the app signs in: the frame traces round, the books
  * pop up onto the shelf, the bird hops on and waves its wand, then the title glows in.
- * Server-rendered so it shows before any JavaScript runs; plays once per session and stays
- * until sign-in has settled.
+ * Server-rendered so it shows before any JavaScript runs. The full animation plays once a day;
+ * later launches show the finished logo briefly. It stays until sign-in has settled.
  */
 export function Splash() {
   const { loading } = useAuth();
@@ -30,8 +32,13 @@ export function Splash() {
       setPhase("gone");
       return;
     }
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const t = setTimeout(() => setMinDone(true), reduced ? MIN_MS_REDUCED : MIN_MS);
+    // The layout's head script has already marked a repeat launch today as "quick" before first paint.
+    const quick = document.documentElement.dataset.splash === "quick"
+      || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    try {
+      localStorage.setItem(DAY, new Date().toDateString());
+    } catch {}
+    const t = setTimeout(() => setMinDone(true), quick ? MIN_MS_QUICK : MIN_MS);
     return () => clearTimeout(t);
   }, []);
 

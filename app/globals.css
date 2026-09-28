@@ -226,6 +226,11 @@ html[data-splash="seen"] .splash { display: none; }
 @keyframes shimmer { from { opacity: 1; } to { opacity: 0.55; } }
 @keyframes title-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
+.call-no-wrap { display: inline-flex; align-items: center; gap: 8px; }
+.filed-under { font-size: 13px; color: var(--muted); }
+
+.affiliate-note { margin: 8px 4px 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+
 /* "More by" shortcuts */
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .chip { min-height: 40px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 20px; border: 2px solid var(--wall); color: var(--wall); font-size: 14px; font-weight: 700; text-decoration: none; }
@@ -253,3 +258,6 @@ html[data-splash="seen"] .splash { display: none; }
   .splash *, .splash .logo-frame { animation: none !important; stroke-dashoffset: 0; }
   .splash .logo-dust { opacity: 1; }
 }
+/* Already played today: show the finished logo, no animation. */
+html[data-splash="quick"] .splash *, html[data-splash="quick"] .splash .logo-frame { animation: none !important; stroke-dashoffset: 0; }
+html[data-splash="quick"] .splash .logo-dust { opacity: 1; }
