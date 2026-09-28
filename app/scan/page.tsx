@@ -1,0 +1,231 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
+import type { User } from "firebase/auth";
+import { CoverArt } from "@/components/BookArt";
+import { Gate } from "@/components/Gate";
+import { CloseIcon } from "@/components/Icons";
+import { Scanner } from "@/components/Scanner";
+import { firstName } from "@/lib/auth";
+import { addBook, getBook, type NewBook } from "@/lib/books";
+import { guessAge, guessFormat, guessTheme } from "@/lib/classify";
+import { cleanIsbn } from "@/lib/isbn";
+import { lookupIsbn } from "@/lib/lookup";
+import { AGE_BANDS, THEMES, type AgeBand, type Book, type Format } from "@/lib/types";
+
+type Phase =
+  | { k: "scanning" }
+  | { k: "looking"; isbn: string }
+  | { k: "owned"; book: Book }
+  | { k: "new"; draft: NewBook; found: boolean }
+  | { k: "added"; book: NewBook };
+
+export default function ScanPage() {
+  return <Gate>{({ user }) => <ScanScreen user={user} />}</Gate>;
+}
+
+function ScanScreen({ user }: { user: User }) {
+  const router = useRouter();
+  const [phase, setPhase] = useState<Phase>({ k: "scanning" });
+  const [typing, setTyping] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [typedError, setTypedError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  const handleIsbn = async (isbn: string) => {
+    setTyping(false);
+    setProblem(null);
+    setPhase({ k: "looking", isbn });
+    try {
+      const existing = await getBook(isbn);
+      if (existing) {
+        setPhase({ k: "owned", book: existing });
+        return;
+      }
+      const res = await lookupIsbn(isbn);
+      const subjects = res?.subjects ?? [];
+      const format: Format = guessFormat(res?.physicalFormat ?? null, res?.pages ?? null, subjects);
+      setPhase({
+        k: "new",
+        found: !!res,
+        draft: {
+          isbn,
+          title: res?.title ?? "",
+          authors: res?.authors ?? [],
+          coverUrl: res?.coverUrl ?? null,
+          subjects,
+          pages: res?.pages ?? null,
+          format,
+          theme: guessTheme(subjects, res?.title ?? ""),
+          ageBand: guessAge(format, subjects, res?.pages ?? null),
+        },
+      });
+    } catch {
+      setProblem("The book couldn't be checked. Check your connection and scan again.");
+      setPhase({ k: "scanning" });
+    }
+  };
+
+  const submitTyped = (e: FormEvent) => {
+    e.preventDefault();
+    const isbn = cleanIsbn(typed);
+    if (!isbn) {
+      setTypedError("That isn't a valid ISBN. It's the 10 or 13 digit number under the barcode.");
+      return;
+    }
+    setTypedError(null);
+    handleIsbn(isbn);
+  };
+
+  const save = async (draft: NewBook) => {
+    if (!draft.title.trim()) return;
+    setSaving(true);
+    try {
+      await addBook({ ...draft, title: draft.title.trim() }, firstName(user));
+      setPhase({ k: "added", book: draft });
+    } catch {
+      setProblem("The book couldn't be saved. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const again = () => { setProblem(null); setPhase({ k: "scanning" }); };
+
+  return (
+    <div className="scan-screen">
+      <Scanner active={phase.k === "scanning" && !typing} onIsbn={handleIsbn} />
+
+      <div className="scan-top">
+        <Link href="/" className="icon-btn round" aria-label="Close scanner"><CloseIcon /></Link>
+        <span className="scan-top-title">Scan a book</span>
+        <span style={{ width: 44 }} />
+      </div>
+
+      <section className="sheet" aria-live="polite">
+        <span className="grabber" aria-hidden="true" />
+        {problem && <p className="form-error">{problem}</p>}
+
+        {phase.k === "scanning" && (
+          typing ? (
+            <form onSubmit={submitTyped} className="stack">
+              <label htmlFor="isbn" className="field-label">ISBN</label>
+              <input id="isbn" className="field" inputMode="numeric" autoComplete="off" autoFocus value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="978…" />
+              {typedError && <p className="form-error">{typedError}</p>}
+              <div className="btn-row">
+                <button type="submit" className="btn btn-dark">Look up book</button>
+                <button type="button" className="btn btn-outline" onClick={() => setTyping(false)}>Use camera</button>
+              </div>
+            </form>
+          ) : (
+            <div className="stack">
+              <h2 className="sheet-title">Point at the barcode</h2>
+              <p className="sheet-note">It's on the back cover, usually with ISBN printed above it.</p>
+              <button type="button" className="btn btn-outline" onClick={() => setTyping(true)}>Type the ISBN instead</button>
+            </div>
+          )
+        )}
+
+        {phase.k === "looking" && (
+          <div className="stack">
+            <h2 className="sheet-title">Looking it up…</h2>
+            <p className="sheet-note">ISBN {phase.isbn}</p>
+          </div>
+        )}
+
+        {phase.k === "owned" && (
+          <div className="stack">
+            <BookHead book={phase.book} heading="Already on your shelf" />
+            <dl className="facts">
+              <div><dt>Shelf</dt><dd>{phase.book.theme}</dd></div>
+              <div><dt>Added</dt><dd>{phase.book.addedAt ? phase.book.addedAt.toDate().toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "–"}</dd></div>
+              <div><dt>Read</dt><dd>{phase.book.readCount} {phase.book.readCount === 1 ? "time" : "times"}</dd></div>
+            </dl>
+            <div className="btn-row">
+              <button type="button" className="btn btn-dark" onClick={again}>Scan another</button>
+              <button type="button" className="btn btn-outline" onClick={() => router.push(`/book/${phase.book.isbn}`)}>Open book</button>
+            </div>
+          </div>
+        )}
+
+        {phase.k === "new" && (
+          <DraftForm
+            draft={phase.draft}
+            found={phase.found}
+            saving={saving}
+            onChange={(draft) => setPhase({ ...phase, draft })}
+            onSave={save}
+            onCancel={again}
+          />
+        )}
+
+        {phase.k === "added" && (
+          <div className="stack">
+            <BookHead book={{ ...phase.book, favourite: false }} heading="Added to the library" />
+            <p className="sheet-note">It's on the {phase.book.theme} shelf.</p>
+            <div className="btn-row">
+              <button type="button" className="btn btn-dark" onClick={again}>Scan another</button>
+              <button type="button" className="btn btn-outline" onClick={() => router.push(`/book/${phase.book.isbn}`)}>Open book</button>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function BookHead({ book, heading }: { book: Pick<Book, "isbn" | "title" | "authors" | "coverUrl" | "favourite">; heading: string }) {
+  return (
+    <div className="book-head">
+      <CoverArt book={book} width={64} height={84} />
+      <div>
+        <h2 className="sheet-title">{heading}</h2>
+        <p className="sheet-book">{book.title}{book.authors[0] ? `, ${book.authors[0]}` : ""}</p>
+      </div>
+    </div>
+  );
+}
+
+function DraftForm({ draft, found, saving, onChange, onSave, onCancel }: {
+  draft: NewBook; found: boolean; saving: boolean;
+  onChange: (d: NewBook) => void; onSave: (d: NewBook) => void; onCancel: () => void;
+}) {
+  const themes = (THEMES as readonly string[]).includes(draft.theme) ? THEMES : [...THEMES, draft.theme];
+  return (
+    <form className="stack" onSubmit={(e) => { e.preventDefault(); onSave(draft); }}>
+      {found ? (
+        <BookHead book={{ ...draft, favourite: false }} heading="New to the library" />
+      ) : (
+        <>
+          <h2 className="sheet-title">New book, no details found</h2>
+          <p className="sheet-note">Add the title and author yourself. ISBN {draft.isbn}</p>
+          <label htmlFor="title" className="field-label">Title</label>
+          <input id="title" className="field" required value={draft.title} onChange={(e) => onChange({ ...draft, title: e.target.value })} />
+          <label htmlFor="author" className="field-label">Author</label>
+          <input id="author" className="field" value={draft.authors[0] ?? ""} onChange={(e) => onChange({ ...draft, authors: e.target.value ? [e.target.value] : [] })} />
+        </>
+      )}
+      <div className="field-pair">
+        <div>
+          <label htmlFor="theme" className="field-label">Shelf</label>
+          <select id="theme" className="field" value={draft.theme} onChange={(e) => onChange({ ...draft, theme: e.target.value })}>
+            {themes.map((t) => <option key={t}>{t}</option>)}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="age" className="field-label">Age</label>
+          <select id="age" className="field" value={draft.ageBand} onChange={(e) => onChange({ ...draft, ageBand: e.target.value as AgeBand })}>
+            {AGE_BANDS.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="btn-row">
+        <button type="submit" className="btn btn-dark" disabled={saving || !draft.title.trim()}>{saving ? "Adding…" : "Add to shelf"}</button>
+        <button type="button" className="btn btn-outline" onClick={onCancel}>Scan another</button>
+      </div>
+    </form>
+  );
+}

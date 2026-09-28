@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isMember(hid) {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in get(/databases/$(database)/documents/households/$(hid)).data.members;
+    }
+
+    match /households/{hid} {
+      // The household doc (members, child's name) is edited in the Firebase console only.
+      allow read: if isMember(hid);
+      allow write: if false;
+
+      match /books/{isbn} {
+        allow read, write: if isMember(hid);
+      }
+      match /wishlist/{id} {
+        allow read, write: if isMember(hid);
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "NurseryBooks",
+  "short_name": "NurseryBooks",
+  "description": "Our bookshelf: scan, rate and find more books like the ones we love.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#22392F",
+  "theme_color": "#22392F",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
