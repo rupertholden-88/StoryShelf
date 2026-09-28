@@ -48,7 +48,7 @@ export function RecCard({ rec, wished, onWish }: { rec: Rec; wished: boolean; on
           <a className="shop-btn" href={ebay?.url ?? links.ebay} target="_blank" rel="noopener noreferrer">
             <span className="shop-name">eBay UK</span>
             <span className="shop-price">
-              {ebay?.lowest ? `From ${money(ebay.lowest.value, ebay.lowest.currency)}` : "See listings"}
+              {ebay?.lowest ? `${money(ebay.lowest.value, ebay.lowest.currency)} delivered` : "See listings"}
             </span>
           </a>
           <button

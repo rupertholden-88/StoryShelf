@@ -103,6 +103,7 @@ export function shopLinks(r: { isbn: string | null; title: string; author: strin
   const tag = process.env.NEXT_PUBLIC_AMAZON_TAG;
   return {
     amazon: `https://www.amazon.co.uk/s?k=${encodeURIComponent(q)}&i=stripbooks${tag ? `&tag=${encodeURIComponent(tag)}` : ""}`,
-    ebay: `https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(q)}`,
+    // UK sellers only (LH_PrefLoc=1), cheapest including postage first (_sop=15).
+    ebay: `https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(q)}&LH_PrefLoc=1&_sop=15`,
   };
 }

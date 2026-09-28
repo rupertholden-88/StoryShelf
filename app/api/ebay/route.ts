@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { firebaseConfig, HOUSEHOLD_ID } from "@/lib/config";
+import { cheapestUk, type EbaySummary } from "@/lib/ebay";
 
 // eBay Browse API, UK marketplace. Keys stay on the server (Vercel env vars).
 let token: { value: string; expires: number } | null = null;
@@ -52,16 +53,19 @@ async function isMember(req: NextRequest): Promise<boolean> {
   return true;
 }
 
-type Summary = { price?: { value: string; currency: string }; itemWebUrl?: string };
-
 async function searchEbay(t: string, params: Record<string, string>) {
-  const qs = new URLSearchParams({ limit: "20", sort: "price", filter: "deliveryCountry:GB", ...params });
+  // UK sellers only: "deliveryCountry" alone also matches overseas sellers who post to the UK.
+  const qs = new URLSearchParams({ limit: "50", filter: "itemLocationCountry:GB,deliveryCountry:GB", ...params });
   const res = await fetch(`https://api.ebay.com/buy/browse/v1/item_summary/search?${qs}`, {
-    headers: { Authorization: `Bearer ${t}`, "X-EBAY-C-MARKETPLACE-ID": "EBAY_GB" },
+    headers: {
+      Authorization: `Bearer ${t}`,
+      "X-EBAY-C-MARKETPLACE-ID": "EBAY_GB",
+      "X-EBAY-C-ENDUSERCTX": "contextualLocation=country%3DGB",
+    },
   });
   if (!res.ok) throw new Error(`eBay search ${res.status}`);
   const j = await res.json();
-  return { items: (j.itemSummaries ?? []) as Summary[], total: (j.total ?? 0) as number };
+  return { items: (j.itemSummaries ?? []) as EbaySummary[], total: (j.total ?? 0) as number };
 }
 
 export async function GET(req: NextRequest) {
@@ -75,14 +79,12 @@ export async function GET(req: NextRequest) {
     if (!t) return NextResponse.json({ error: "not-configured" }, { status: 501 });
 
     let result = isbn ? await searchEbay(t, { gtin: isbn }) : { items: [], total: 0 };
-    if (result.items.length === 0 && q) result = await searchEbay(t, { q, category_ids: "267" });
+    if (!cheapestUk(result.items) && q) result = await searchEbay(t, { q, category_ids: "267" });
 
-    const priced = result.items.filter((i) => i.price?.value);
-    priced.sort((a, b) => Number(a.price!.value) - Number(b.price!.value));
-    const cheapest = priced[0];
+    const cheapest = cheapestUk(result.items);
 
     return NextResponse.json(
-      { count: result.total, lowest: cheapest?.price ?? null, url: cheapest?.itemWebUrl ?? null },
+      { count: result.total, lowest: cheapest?.total ?? null, url: cheapest?.url ?? null },
       { headers: { "Cache-Control": "private, max-age=3600" } }
     );
   } catch {
