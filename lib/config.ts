@@ -10,6 +10,3 @@ export const firebaseConfig = {
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "991579376605",
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:991579376605:web:32ed4a59c0ef713daf4434",
 };
-
-/** Document id under /households that holds the library. */
-export const HOUSEHOLD_ID = process.env.NEXT_PUBLIC_HOUSEHOLD_ID || "holden";

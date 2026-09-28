@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { Gate } from "@/components/Gate";
-import { CoversIcon, SearchIcon, SpinesIcon } from "@/components/Icons";
+import { CoversIcon, SearchIcon, SettingsIcon, SpinesIcon } from "@/components/Icons";
 import { Shelf } from "@/components/Shelf";
 import { arrange, type Mode, type View } from "@/lib/arrange";
 import { useBackfill } from "@/lib/backfill";
@@ -38,9 +38,14 @@ function Library({ household }: { household: Household }) {
             <h1 className="lib-title">{household.childName ? `${childName}'s library` : "Our library"}</h1>
             <p className="lib-sub">{loading ? "Counting books…" : `${books.length} ${books.length === 1 ? "book" : "books"}`}</p>
           </div>
-          <Link href="/search" className="icon-btn round" aria-label="Search">
-            <SearchIcon />
-          </Link>
+          <div className="header-icons">
+            <Link href="/search" className="icon-btn round" aria-label="Search">
+              <SearchIcon />
+            </Link>
+            <Link href="/settings" className="icon-btn round" aria-label="Settings">
+              <SettingsIcon />
+            </Link>
+          </div>
         </div>
         <div className="controls">
           <div className="segmented" role="group" aria-label="Arrange shelves by">

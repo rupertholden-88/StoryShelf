@@ -3,9 +3,7 @@ import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
 import {
   getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, type Firestore,
 } from "firebase/firestore";
-import { firebaseConfig, HOUSEHOLD_ID } from "./config";
-
-export { HOUSEHOLD_ID };
+import { firebaseConfig } from "./config";
 
 let app: FirebaseApp | undefined;
 let firestore: Firestore | undefined;
@@ -32,6 +30,19 @@ export function db(): Firestore {
     firestore = getFirestore(firebaseApp());
   }
   return firestore;
+}
+
+let currentHousehold: string | null = null;
+
+/** Set by the sign-in gate once it has found the library this person belongs to. */
+export function setHouseholdId(id: string | null) {
+  currentHousehold = id;
+}
+
+/** The signed-in person's library. Only called from pages inside the gate, after it's been found. */
+export function householdId(): string {
+  if (!currentHousehold) throw new Error("No library selected yet");
+  return currentHousehold;
 }
 
 export const googleProvider = () => new GoogleAuthProvider();

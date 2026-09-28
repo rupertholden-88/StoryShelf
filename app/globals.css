@@ -60,6 +60,11 @@ a { color: inherit; }
 .gate-signin .gate-note { max-width: 30ch; }
 .gate-logo { width: min(100%, 380px, 52dvh); margin-bottom: 4px; }
 .gate-logo svg { display: block; width: 100%; height: auto; }
+.gate-form { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; }
+.gate-signin .gate-form { align-items: stretch; }
+.gate-label { font-size: 15px; font-weight: 700; color: var(--paper); margin-top: 6px; }
+.gate-label span { font-weight: 400; color: var(--sage); }
+.gate-start .gate-form .btn { margin-top: 10px; }
 .gate-error { margin: 0; padding: 10px 12px; border-radius: 10px; background: rgba(200, 65, 58, 0.18); border: 1px solid var(--tomato); color: var(--paper); font-size: 15px; line-height: 1.4; max-width: 34ch; }
 
 /* Library header */
@@ -230,6 +235,22 @@ html[data-splash="seen"] .splash { display: none; }
 .filed-under { font-size: 13px; color: var(--muted); }
 
 .affiliate-note { margin: 8px 4px 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+
+/* Settings */
+.header-icons { display: flex; gap: 8px; }
+.settings { gap: 16px; }
+.settings-card { background: var(--card); border: 1px solid var(--card-line); border-radius: 4px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.settings-card .btn { flex: 0 0 auto; align-self: flex-start; margin-top: 6px; }
+.member-list { list-style: none; margin: 4px 0; padding: 0; }
+.member-list li { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--card-line); font-size: 15px; word-break: break-all; }
+.member-list li:last-child { border-bottom: 1px solid var(--card-line); }
+.member-you { color: var(--muted); }
+.member-add .btn-row { align-items: center; }
+.member-add .field { flex: 1; min-width: 0; }
+.member-add .btn { margin-top: 0; }
+.invite { margin-top: 6px; padding: 12px; border-radius: 8px; background: #eef3ec; border: 1px solid var(--sage); }
+.invite .btn-row { flex-wrap: wrap; align-items: center; margin-top: 6px; }
+.invite .btn { margin-top: 0; }
 
 /* "More by" shortcuts */
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }

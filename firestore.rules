@@ -1,9 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
     function isMember(hid) {
-      return request.auth != null
-        && request.auth.token.email_verified == true
+      return signedIn()
         && request.auth.token.email in get(/databases/$(database)/documents/households/$(hid)).data.members;
     }
 
@@ -24,10 +27,27 @@ service cloud.firestore {
         || request.resource.data.get('ratings', {}).diff(resource.data.get('ratings', {})).affectedKeys().hasOnly([request.auth.uid]);
     }
 
+    function validHousehold(h) {
+      return h.members is list && h.members.size() >= 1 && h.members.size() <= 12
+        && (!('childName' in h) || (h.childName is string && h.childName.size() <= 40))
+        && (!('childBirthMonth' in h) || (h.childBirthMonth is string && h.childBirthMonth.matches('^([0-9]{4}-[0-9]{2})?$')))
+        && (!('giftToken' in h) || (h.giftToken is string && h.giftToken.size() >= 20 && h.giftToken.size() <= 64));
+    }
+
     match /households/{hid} {
-      // The household doc (members, child's name) is edited in the Firebase console only.
-      allow read: if isMember(hid);
-      allow write: if false;
+      // Found by the signed-in person's email: where('members', 'array-contains', email).
+      allow get, list: if signedIn() && request.auth.token.email in resource.data.members;
+      // Anyone signed in can start a library, with only themselves in it.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['members', 'childName', 'childBirthMonth', 'createdAt'])
+        && request.resource.data.members == [request.auth.token.email]
+        && validHousehold(request.resource.data);
+      // Members edit the child's details, who's in it and gift-list sharing, but can't remove themselves.
+      allow update: if signedIn() && request.auth.token.email in resource.data.members
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'childName', 'childBirthMonth', 'giftToken'])
+        && request.auth.token.email in request.resource.data.members
+        && validHousehold(request.resource.data);
+      allow delete: if false;
 
       match /books/{isbn} {
         allow read, delete: if isMember(hid);

@@ -5,14 +5,14 @@ import {
   collection, deleteDoc, doc, FieldPath, getDoc, getDocs, increment, onSnapshot, query,
   serverTimestamp, setDoc, updateDoc, where, type Timestamp,
 } from "firebase/firestore";
-import { db, HOUSEHOLD_ID } from "./firebase";
+import { db, householdId } from "./firebase";
 import { titleKey } from "./recommend";
 import type { Book, Rec } from "./types";
 
-const booksCol = () => collection(db(), "households", HOUSEHOLD_ID, "books");
-const bookRef = (isbn: string) => doc(db(), "households", HOUSEHOLD_ID, "books", isbn);
-const wishCol = () => collection(db(), "households", HOUSEHOLD_ID, "wishlist");
-const wishRef = (id: string) => doc(db(), "households", HOUSEHOLD_ID, "wishlist", id);
+const booksCol = () => collection(db(), "households", householdId(), "books");
+const bookRef = (isbn: string) => doc(db(), "households", householdId(), "books", isbn);
+const wishCol = () => collection(db(), "households", householdId(), "wishlist");
+const wishRef = (id: string) => doc(db(), "households", householdId(), "wishlist", id);
 
 function withDefaults(data: Partial<Book>, isbn: string): Book {
   return {

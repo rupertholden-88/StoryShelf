@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { firebaseConfig, HOUSEHOLD_ID } from "@/lib/config";
+import { firebaseConfig } from "@/lib/config";
 import { cheapestUk, type EbaySummary } from "@/lib/ebay";
 
 // eBay Browse API, UK marketplace. Keys stay on the server (Vercel env vars).
@@ -42,14 +42,16 @@ function tokenExpiry(t: string): number {
  */
 async function isMember(req: NextRequest): Promise<boolean> {
   const t = req.headers.get("authorization")?.match(/^Bearer (.+)$/)?.[1];
-  if (!t) return false;
+  const hid = req.headers.get("x-household") ?? "";
+  if (!t || !/^[A-Za-z0-9_-]{1,64}$/.test(hid)) return false;
+  const key = `${hid}:${t}`;
   const now = Date.now();
-  if ((members.get(t) ?? 0) > now) return true;
-  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/households/${HOUSEHOLD_ID}?mask.fieldPaths=childName`;
+  if ((members.get(key) ?? 0) > now) return true;
+  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/households/${hid}?mask.fieldPaths=childName`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${t}` } });
   if (!res.ok) return false;
   for (const [k, exp] of members) if (exp <= now) members.delete(k);
-  members.set(t, Math.min(tokenExpiry(t), now + 60 * 60 * 1000));
+  members.set(key, Math.min(tokenExpiry(t), now + 60 * 60 * 1000));
   return true;
 }
 

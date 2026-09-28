@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
-import { deleteField, doc, FieldPath, getDoc, increment, setDoc, updateDoc } from "firebase/firestore";
+import {
+  arrayRemove, arrayUnion, collection, deleteDoc, deleteField, doc, FieldPath, getDoc, getDocs, increment, query, setDoc, updateDoc, where,
+} from "firebase/firestore";
 
 // Runs against the Firestore emulator: npm run test:rules
 let env: RulesTestEnvironment;
@@ -37,14 +39,39 @@ beforeEach(async () => {
 });
 
 describe("household", () => {
-  it("members can read it, nobody can write it", async () => {
+  const find = (db: ReturnType<typeof member>, email: string) =>
+    getDocs(query(collection(db, "households"), where("members", "array-contains", email)));
+
+  it("members can find and read it by their email", async () => {
     await assertSucceeds(getDoc(doc(member(), H)));
-    await assertFails(updateDoc(doc(member(), H), { members: ["mallory@example.com"] }));
+    await assertSucceeds(find(member(), "alice@example.com"));
   });
-  it("outsiders and unverified emails can't read it", async () => {
+  it("outsiders and unverified emails can't read or find it", async () => {
     await assertFails(getDoc(doc(member("m", "mallory@example.com"), H)));
+    await assertFails(find(member("m", "mallory@example.com"), "alice@example.com"));
     await assertFails(getDoc(doc(env.authenticatedContext("a", { email: "alice@example.com", email_verified: false }).firestore(), H)));
     await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), H)));
+  });
+  it("anyone signed in can start a library with only themselves in it", async () => {
+    const db = member("c", "carol@example.com");
+    await assertSucceeds(setDoc(doc(db, "households", "new1"), { members: ["carol@example.com"], childName: "Ada", childBirthMonth: "2024-03" }));
+    await assertFails(setDoc(doc(db, "households", "new2"), { members: ["carol@example.com", "alice@example.com"] }));
+    await assertFails(setDoc(doc(db, "households", "new3"), { members: ["dave@example.com"] }));
+    await assertFails(setDoc(doc(db, "households", "new4"), { members: ["carol@example.com"], childBirthMonth: "March" }));
+    await assertFails(setDoc(doc(env.unauthenticatedContext().firestore(), "households", "new5"), { members: ["x@example.com"] }));
+  });
+  it("members can change the child's details and add or remove others", async () => {
+    await assertSucceeds(updateDoc(doc(member(), H), { childName: "Jamie", childBirthMonth: "2025-06" }));
+    await assertSucceeds(updateDoc(doc(member(), H), { members: arrayUnion("carol@example.com") }));
+    await assertSucceeds(updateDoc(doc(member(), H), { members: arrayRemove("bob@example.com") }));
+  });
+  it("members can't remove themselves, add unknown fields or delete it", async () => {
+    await assertFails(updateDoc(doc(member(), H), { members: arrayRemove("alice@example.com") }));
+    await assertFails(updateDoc(doc(member(), H), { owner: "alice" }));
+    await assertFails(deleteDoc(doc(member(), H)));
+  });
+  it("outsiders can't change it", async () => {
+    await assertFails(updateDoc(doc(member("m", "mallory@example.com"), H), { members: arrayUnion("mallory@example.com") }));
   });
 });
 
@@ -86,7 +113,6 @@ describe("books", () => {
     await assertFails(updateDoc(ref, { title: deleteField() }));
   });
   it("members can remove books", async () => {
-    const { deleteDoc } = await import("firebase/firestore");
     await assertSucceeds(deleteDoc(doc(member(), H, "books", "111")));
   });
 });

@@ -1,34 +1,62 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db, HOUSEHOLD_ID } from "./firebase";
+import {
+  addDoc, arrayRemove, arrayUnion, collection, doc, limit, onSnapshot, query, serverTimestamp, updateDoc, where,
+} from "firebase/firestore";
+import { db, setHouseholdId } from "./firebase";
 import { AGE_BANDS, type AgeBand, type Household } from "./types";
 
-export type HouseholdStatus = "loading" | "ok" | "denied";
+/** "none": signed in but not in any library yet, so they can start one. */
+export type HouseholdStatus = "loading" | "ok" | "none" | "error";
 
-export function useHousehold(enabled: boolean) {
+export const normEmail = (e: string) => e.trim().toLowerCase();
+export const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+
+/** Finds the library whose members list includes this email, and follows changes to it. */
+export function useHousehold(email: string | null) {
   const [household, setHousehold] = useState<Household | null>(null);
   const [status, setStatus] = useState<HouseholdStatus>("loading");
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!email) return;
+    setStatus("loading");
+    const q = query(collection(db(), "households"), where("members", "array-contains", email), limit(1));
     return onSnapshot(
-      doc(db(), "households", HOUSEHOLD_ID),
+      q,
       (snap) => {
-        if (!snap.exists()) {
-          setStatus("denied");
+        const d = snap.docs[0];
+        if (!d) {
+          setHouseholdId(null);
+          setHousehold(null);
+          setStatus("none");
           return;
         }
-        setHousehold(snap.data() as Household);
+        setHouseholdId(d.id);
+        setHousehold({ ...(d.data() as Omit<Household, "id">), id: d.id });
         setStatus("ok");
       },
-      () => setStatus("denied")
+      () => setStatus("error")
     );
-  }, [enabled]);
+  }, [email]);
 
   return { household, status };
 }
+
+/** Starts a new library with the signed-in person as its only member. */
+export function createHousehold(email: string, details: { childName?: string; childBirthMonth?: string }) {
+  const data: Record<string, unknown> = { members: [email], createdAt: serverTimestamp() };
+  if (details.childName?.trim()) data.childName = details.childName.trim();
+  if (details.childBirthMonth) data.childBirthMonth = details.childBirthMonth;
+  return addDoc(collection(db(), "households"), data);
+}
+
+const householdRef = (id: string) => doc(db(), "households", id);
+
+export const updateChild = (id: string, childName: string, childBirthMonth: string) =>
+  updateDoc(householdRef(id), { childName: childName.trim(), childBirthMonth });
+export const addMember = (id: string, email: string) => updateDoc(householdRef(id), { members: arrayUnion(normEmail(email)) });
+export const removeMember = (id: string, email: string) => updateDoc(householdRef(id), { members: arrayRemove(email) });
 
 export function childAgeMonths(h: Household | null): number | null {
   if (!h?.childBirthMonth) return null;
