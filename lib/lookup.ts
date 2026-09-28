@@ -9,8 +9,11 @@ export interface LookupResult {
   physicalFormat: string | null;
 }
 
+/** Give up on a slow source after this long; the others usually have the book anyway. */
+export const LOOKUP_TIMEOUT_MS = 8000;
+
 async function getJson(url: string): Promise<any> {
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`${res.status} ${url}`);
   return res.json();
 }
@@ -62,7 +65,7 @@ function firstNonEmpty(...lists: (string[] | undefined)[]): string[] {
 type Person = { name?: string; role?: string };
 
 /** Works out authors and illustrators from whichever sources have them. */
-function splitPeople(d: any, e: any, w: any, g: any): { authors: string[]; illustrators: string[] } {
+export function splitPeople(d: any, e: any, w: any, g: any): { authors: string[]; illustrators: string[] } {
   const by = parseByStatement(d?.by_statement ?? e?.by_statement);
   const contributors: Person[] = Array.isArray(e?.contributors) ? e.contributors : [];
   const contribIllustrators = contributors.filter((c) => /illustrat|artist|pictures/i.test(c.role || "")).map((c) => c.name || "");

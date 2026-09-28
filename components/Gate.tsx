@@ -7,7 +7,7 @@ import { useHousehold } from "@/lib/household";
 import type { Household } from "@/lib/types";
 
 export function Gate({ children }: { children: (ctx: { user: User; household: Household }) => ReactNode }) {
-  const { user, loading, signIn, signOut } = useAuth();
+  const { user, loading, error, signIn, signOut } = useAuth();
   const { household, status } = useHousehold(!!user);
 
   if (loading || (user && status === "loading")) {
@@ -19,7 +19,8 @@ export function Gate({ children }: { children: (ctx: { user: User; household: Ho
       <div className="gate">
         <h1 className="gate-title">Story Shelf</h1>
         <p className="gate-note">Sign in to see the bookshelf, scan new books and rate old favourites.</p>
-        <button type="button" className="btn btn-light" onClick={() => signIn().catch(() => {})}>Sign in with Google</button>
+        <button type="button" className="btn btn-light" onClick={() => signIn()}>Sign in with Google</button>
+        {error && <p className="gate-error" role="alert">{error}</p>}
       </div>
     );
   }

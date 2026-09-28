@@ -1,11 +1,14 @@
 import { guessAge, guessFormat } from "./classify";
 import { pickIsbn } from "./isbn";
+import { LOOKUP_TIMEOUT_MS } from "./lookup";
 import type { Book, Rec } from "./types";
 
 const KID = /juvenile|children|picture book|board book|toddler|baby|nursery|preschool/i;
 const GENERIC = /^(fiction|juvenile fiction|juvenile literature|children's (fiction|stories|books)|picture books( for children)?|board books|stories in rhyme|english language|large type books|accessible book|protected daisy|in library|toy and movable books|lift-the-flap books|readers)$/i;
 
-const norm = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, "");
+/** Edition-independent key for a title; suggestions and saved books are matched on it. */
+export const titleKey = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, "");
+const norm = titleKey;
 
 function useful(subject: string): boolean {
   return subject.length < 40 && !/[:=]/.test(subject) && !GENERIC.test(subject.trim());
@@ -13,10 +16,14 @@ function useful(subject: string): boolean {
 
 async function search(params: string): Promise<any[]> {
   const url = `https://openlibrary.org/search.json?${params}&language=eng&limit=25&fields=key,title,author_name,isbn,cover_i,subject`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  const json = await res.json();
-  return json.docs ?? [];
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.docs ?? [];
+  } catch {
+    return [];
+  }
 }
 
 const avgRating = (b: Book) => {

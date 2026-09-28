@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { firebaseAuth } from "@/lib/firebase";
 import { shopLinks } from "@/lib/recommend";
 import { AGE_BANDS, type Rec } from "@/lib/types";
 import { CoverArt } from "./BookArt";
@@ -19,8 +20,12 @@ export function RecCard({ rec, wished, onWish }: { rec: Rec; wished: boolean; on
     let live = true;
     const params = new URLSearchParams({ q: `${rec.title} ${rec.author}` });
     if (rec.isbn) params.set("isbn", rec.isbn);
-    fetch(`/api/ebay?${params}`)
-      .then((r) => (r.ok ? r.json() : null))
+    (async () => {
+      const token = await firebaseAuth().currentUser?.getIdToken();
+      if (!token) return null;
+      const r = await fetch(`/api/ebay?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      return r.ok ? r.json() : null;
+    })()
       .then((j) => live && setEbay(j))
       .catch(() => {});
     return () => { live = false; };

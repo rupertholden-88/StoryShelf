@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { firebaseConfig, HOUSEHOLD_ID } from "@/lib/config";
 
 // eBay Browse API, UK marketplace. Keys stay on the server (Vercel env vars).
 let token: { value: string; expires: number } | null = null;
@@ -22,6 +23,35 @@ async function getToken(): Promise<string | null> {
   return token.value;
 }
 
+// Tokens already checked, so each person costs one Firestore read an hour rather than one per card.
+const members = new Map<string, number>();
+
+/** Seconds-since-epoch expiry from a Firebase ID token. Only used for caching after Firestore accepts it. */
+function tokenExpiry(t: string): number {
+  try {
+    return JSON.parse(Buffer.from(t.split(".")[1], "base64url").toString()).exp * 1000;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Only household members may use the eBay quota. Firestore checks the ID token and applies
+ * firestore.rules, so a successful read of the household document means a signed-in member.
+ */
+async function isMember(req: NextRequest): Promise<boolean> {
+  const t = req.headers.get("authorization")?.match(/^Bearer (.+)$/)?.[1];
+  if (!t) return false;
+  const now = Date.now();
+  if ((members.get(t) ?? 0) > now) return true;
+  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/households/${HOUSEHOLD_ID}?mask.fieldPaths=childName`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${t}` } });
+  if (!res.ok) return false;
+  for (const [k, exp] of members) if (exp <= now) members.delete(k);
+  members.set(t, Math.min(tokenExpiry(t), now + 60 * 60 * 1000));
+  return true;
+}
+
 type Summary = { price?: { value: string; currency: string }; itemWebUrl?: string };
 
 async function searchEbay(t: string, params: Record<string, string>) {
@@ -40,6 +70,7 @@ export async function GET(req: NextRequest) {
   if (!isbn && !q) return NextResponse.json({ error: "isbn or q required" }, { status: 400 });
 
   try {
+    if (!(await isMember(req))) return NextResponse.json({ error: "sign-in-required" }, { status: 401 });
     const t = await getToken();
     if (!t) return NextResponse.json({ error: "not-configured" }, { status: 501 });
 
@@ -52,7 +83,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(
       { count: result.total, lowest: cheapest?.price ?? null, url: cheapest?.itemWebUrl ?? null },
-      { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" } }
+      { headers: { "Cache-Control": "private, max-age=3600" } }
     );
   } catch {
     return NextResponse.json({ error: "ebay-unavailable" }, { status: 502 });

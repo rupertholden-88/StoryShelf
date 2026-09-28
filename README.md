@@ -17,14 +17,18 @@ Next.js (App Router) PWA · Firebase Auth + Firestore · hosted on Vercel.
 - **Suggestions:** based on favourites and 4–5 star books, searched on Open Library by author and subject,
   filtered to children's books and anything you already own.
 - **Shops:** Amazon UK links search by ISBN (add an Associates tag if you have one). eBay prices come from
-  the eBay Browse API through `/api/ebay`, so the keys stay on the server.
+  the eBay Browse API through `/api/ebay`, so the keys stay on the server. The route only answers signed-in
+  household members.
+- **Saved books:** bookmark a suggestion to keep it under For you → Saved. It drops off the list once you scan
+  any edition of it.
+- **Offline:** the library is cached on the phone, so it opens instantly and still works without signal.
 
 ## Setup
 
 1. **Firebase project**
    - Add a Web app and copy its config into `.env.local` (see `.env.example`).
    - Authentication → enable **Google**. Add your Vercel domain under Authentication → Settings → Authorised domains.
-   - Firestore → create a database, then publish `firestore.rules`.
+   - Firestore → create a database, then publish `firestore.rules` (publish it again whenever it changes).
    - Create the household document `households/<NEXT_PUBLIC_HOUSEHOLD_ID>`:
      ```json
      {
@@ -33,6 +37,7 @@ Next.js (App Router) PWA · Firebase Auth + Firestore · hosted on Vercel.
        "childBirthMonth": "2025-06"
      }
      ```
+     The document id defaults to `holden`; set `NEXT_PUBLIC_HOUSEHOLD_ID` to use another.
      Only these email addresses can read or write the library. `childBirthMonth` powers the
      "James is here" shelf and the age tabs on For you.
 
@@ -45,6 +50,13 @@ Next.js (App Router) PWA · Firebase Auth + Firestore · hosted on Vercel.
    npm run dev
    ```
    The camera needs HTTPS on phones, so test scanning on the Vercel preview (or `next dev --experimental-https`).
+
+   Checks, as run in CI:
+   ```bash
+   npm run typecheck
+   npm test              # unit tests
+   npm run test:rules    # firestore.rules against the Firestore emulator (needs Java)
+   ```
 
 4. **Deploy** – import the repo in Vercel and add the same environment variables. Then on your phone,
    open the site and choose "Add to Home Screen".

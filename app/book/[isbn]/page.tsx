@@ -8,12 +8,15 @@ import { CoverArt } from "@/components/BookArt";
 import { Gate } from "@/components/Gate";
 import { BackIcon, HeartIcon } from "@/components/Icons";
 import { Stars } from "@/components/Stars";
+import { SyncedField } from "@/components/SyncedField";
 import { callNumber } from "@/lib/appearance";
 import { firstName } from "@/lib/auth";
 import { rateBook, readAgain, removeBook, updateBook, useBook, useBooks } from "@/lib/books";
 import { lookupIsbn } from "@/lib/lookup";
 import { recommend } from "@/lib/recommend";
 import { AGE_BANDS, THEMES, type AgeBand, type Book, type Household, type Rec } from "@/lib/types";
+
+const splitNames = (t: string) => t.split(",").map((a) => a.trim()).filter(Boolean);
 
 export default function BookPage() {
   const { isbn } = useParams<{ isbn: string }>();
@@ -114,17 +117,11 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
         {editing && (
           <div className="card-row card-edit">
             <label htmlFor="title" className="field-label">Title</label>
-            <input id="title" className="field" defaultValue={book.title} onBlur={(e) => e.target.value.trim() && e.target.value !== book.title && updateBook(book.isbn, { title: e.target.value.trim() })} />
+            <SyncedField id="title" required value={book.title} onSave={(title) => updateBook(book.isbn, { title })} />
             <label htmlFor="author" className="field-label">Author</label>
-            <input id="author" className="field" defaultValue={book.authors.join(", ")} onBlur={(e) => {
-              const authors = e.target.value.split(",").map((a) => a.trim()).filter(Boolean);
-              if (authors.join(", ") !== book.authors.join(", ")) updateBook(book.isbn, { authors });
-            }} />
+            <SyncedField id="author" value={book.authors.join(", ")} onSave={(t) => updateBook(book.isbn, { authors: splitNames(t) })} />
             <label htmlFor="illustrator" className="field-label">Illustrator</label>
-            <input id="illustrator" className="field" defaultValue={book.illustrators.join(", ")} onBlur={(e) => {
-              const illustrators = e.target.value.split(",").map((a) => a.trim()).filter(Boolean);
-              if (illustrators.join(", ") !== book.illustrators.join(", ")) updateBook(book.isbn, { illustrators });
-            }} />
+            <SyncedField id="illustrator" value={book.illustrators.join(", ")} onSave={(t) => updateBook(book.isbn, { illustrators: splitNames(t) })} />
             <div className="field-pair">
               <div>
                 <label htmlFor="theme" className="field-label">Shelf</label>

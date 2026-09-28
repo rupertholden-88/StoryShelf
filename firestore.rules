@@ -7,16 +7,46 @@ service cloud.firestore {
         && request.auth.token.email in get(/databases/$(database)/documents/households/$(hid)).data.members;
     }
 
+    function bookFields() {
+      return ['isbn', 'title', 'authors', 'illustrators', 'coverUrl', 'subjects', 'theme', 'ageBand', 'format',
+              'pages', 'favourite', 'readCount', 'ratings', 'addedAt', 'addedBy', 'lookedUpAt', 'lookedUpV'];
+    }
+
+    // Older books may be missing newer fields (illustrators came later), so absent fields get defaults.
+    function validBook(b) {
+      return b.title is string && b.title.size() > 0 && b.title.size() <= 300
+        && b.get('authors', []) is list && b.get('illustrators', []) is list && b.get('ratings', {}) is map;
+    }
+
+    // Everyone rates for themselves: a change to ratings may only touch the signed-in person's own entry.
+    function ownRatingOnly() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ratings'])
+        || request.resource.data.get('ratings', {}).diff(resource.data.get('ratings', {})).affectedKeys().hasOnly([request.auth.uid]);
+    }
+
     match /households/{hid} {
       // The household doc (members, child's name) is edited in the Firebase console only.
       allow read: if isMember(hid);
       allow write: if false;
 
       match /books/{isbn} {
-        allow read, write: if isMember(hid);
+        allow read, delete: if isMember(hid);
+        allow create: if isMember(hid)
+          && request.resource.data.keys().hasOnly(bookFields())
+          && request.resource.data.isbn == isbn
+          && validBook(request.resource.data)
+          && request.resource.data.ratings.size() == 0;
+        allow update: if isMember(hid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(bookFields())
+          && request.resource.data.isbn == resource.data.isbn
+          && validBook(request.resource.data)
+          && ownRatingOnly();
       }
       match /wishlist/{id} {
-        allow read, write: if isMember(hid);
+        allow read, delete: if isMember(hid);
+        allow create, update: if isMember(hid)
+          && request.resource.data.keys().hasOnly(['key', 'isbn', 'title', 'author', 'coverUrl', 'ageBand', 'why', 'score', 'addedAt'])
+          && request.resource.data.title is string && request.resource.data.title.size() <= 300;
       }
     }
   }
