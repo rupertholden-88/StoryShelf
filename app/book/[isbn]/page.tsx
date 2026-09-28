@@ -45,7 +45,9 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
     );
   }
 
-  const me = firstName(user);
+  // A shared family account gets one rating row, labelled "Our rating".
+  const shared = household.members.length <= 1;
+  const me = shared ? "Our rating" : firstName(user);
   const mine = book.ratings[user.uid]?.stars ?? 0;
   const others = Object.entries(book.ratings).filter(([uid, r]) => uid !== user.uid && r.stars > 0);
   const child = household.childName || "Our";
@@ -109,7 +111,7 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
 
         <div className="card-row">
           <span className="card-key">{me}</span>
-          <Stars who={me} value={mine} onChange={(n) => rateBook(book.isbn, user.uid, me, n)} />
+          <Stars who={shared ? "Our" : me} value={mine} onChange={(n) => rateBook(book.isbn, user.uid, me, n)} />
         </div>
         {others.map(([uid, r]) => (
           <div className="card-row" key={uid}>

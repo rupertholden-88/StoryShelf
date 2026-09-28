@@ -9,7 +9,7 @@ export function Stars({ who, value, onChange }: { who: string; value: number; on
     );
   }
   return (
-    <span className="stars" role="group" aria-label={`${who}'s rating`}>
+    <span className="stars" role="group" aria-label={who === "Our" ? "Our rating" : `${who}'s rating`}>
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
