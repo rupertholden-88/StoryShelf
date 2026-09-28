@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { AuthProvider } from "@/lib/auth";
 import { RegisterSW } from "@/components/RegisterSW";
+import { Splash } from "@/components/Splash";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,8 +21,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-GB">
+    <html lang="en-GB" suppressHydrationWarning>
       <head>
+        {/* Hide the splash before first paint if it has already played this session. */}
+        <script dangerouslySetInnerHTML={{ __html: `try{if(sessionStorage.getItem("nb-splash")==="1")document.documentElement.dataset.splash="seen"}catch(e){}` }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
@@ -32,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <AuthProvider>
+          <Splash />
           <div className="app">{children}</div>
         </AuthProvider>
         <RegisterSW />
