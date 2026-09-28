@@ -29,6 +29,7 @@ function withDefaults(data: Partial<Book>, isbn: string): Book {
     ratings: data.ratings ?? {},
     addedAt: data.addedAt ?? null,
     addedBy: data.addedBy,
+    lookedUpAt: data.lookedUpAt,
   };
 }
 

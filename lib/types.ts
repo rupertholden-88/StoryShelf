@@ -41,6 +41,8 @@ export interface Book {
   ratings: Record<string, Rating>;
   addedAt?: Timestamp | null;
   addedBy?: string;
+  /** When missing details were last looked up automatically (ms). */
+  lookedUpAt?: number;
 }
 
 export interface Household {

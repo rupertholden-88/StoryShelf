@@ -7,6 +7,7 @@ import { Gate } from "@/components/Gate";
 import { CoversIcon, SearchIcon, SpinesIcon } from "@/components/Icons";
 import { Shelf } from "@/components/Shelf";
 import { arrange, type Mode, type View } from "@/lib/arrange";
+import { useBackfill } from "@/lib/backfill";
 import { useBooks } from "@/lib/books";
 import { bandForMonths, childAgeMonths } from "@/lib/household";
 import { usePersisted } from "@/lib/persisted";
@@ -20,6 +21,7 @@ const MODES: [Mode, string][] = [["theme", "Theme"], ["age", "Age"], ["author", 
 
 function Library({ household }: { household: Household }) {
   const { books, loading } = useBooks();
+  useBackfill(books);
   const [mode, setMode] = usePersisted<Mode>("nb-mode", "theme", ["theme", "age", "author"]);
   const [view, setView] = usePersisted<View>("nb-view", "spines", ["spines", "covers"]);
   const [searching, setSearching] = useState(false);

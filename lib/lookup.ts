@@ -41,7 +41,13 @@ export async function lookupIsbn(isbn: string): Promise<LookupResult | null> {
   return {
     isbn,
     title,
-    authors: firstNonEmpty(d?.authors?.map((a: { name: string }) => a.name), w?.author_name, g?.authors),
+    authors: firstNonEmpty(
+      d?.authors?.map((a: { name: string }) => a.name),
+      w?.author_name,
+      g?.authors,
+      fromByStatement(d?.by_statement ?? e?.by_statement),
+      e?.contributors?.map((c: { name: string }) => c.name)
+    ),
     coverUrl:
       d?.cover?.medium ??
       (w?.cover_i ? `https://covers.openlibrary.org/b/id/${w.cover_i}-M.jpg` : null) ??
@@ -56,4 +62,12 @@ export async function lookupIsbn(isbn: string): Promise<LookupResult | null> {
 function firstNonEmpty(...lists: (string[] | undefined)[]): string[] {
   for (const l of lists) if (Array.isArray(l) && l.length) return l;
   return [];
+}
+
+/** "written by Anna Milbourne ; illustrated by Simona Dimitri" -> ["Anna Milbourne"] */
+function fromByStatement(by: unknown): string[] | undefined {
+  if (typeof by !== "string") return undefined;
+  const first = by.split(/[;\[]|illustrat/i)[0];
+  const name = first.replace(/^.*?\bby\b/i, "").replace(/[.,:\s]+$/, "").trim();
+  return name && name.length < 60 ? name.split(/\s+and\s+|\s*&\s*/).map((n) => n.trim()).filter(Boolean) : undefined;
 }
