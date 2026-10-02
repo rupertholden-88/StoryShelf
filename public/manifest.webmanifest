@@ -4,7 +4,7 @@
   "description": "Our bookshelf: scan, rate and find more books like the ones we love.",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#22392F",
   "theme_color": "#22392F",
   "icons": [

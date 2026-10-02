@@ -31,7 +31,7 @@ function Library({ household }: { household: Household }) {
   const shelves = useMemo(() => arrange(books, mode, nowBand), [books, mode, nowBand]);
 
   return (
-    <>
+    <div className="library-page">
       <header className="lib-header">
         <div className="lib-title-row">
           <div>
@@ -72,6 +72,6 @@ function Library({ household }: { household: Household }) {
       </main>
 
       <BottomNav active="library" />
-    </>
+    </div>
   );
 }
