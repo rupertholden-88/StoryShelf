@@ -6,7 +6,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 const seed: Book = {
   isbn: "9780000000001", title: "Owl Babies", authors: ["Martin Waddell"], illustrators: [], coverUrl: null,
-  subjects: [], theme: "Animals", ageBand: "2-3", format: "picture", pages: 32, favourite: true, readCount: 3, ratings: {},
+  subjects: [], theme: "Animals", ageBand: "2-3", format: "picture", pages: 32, favourite: true, readCount: 3, ratings: {}, status: "shelf",
 };
 
 it("leaves out translations and uses the English edition's ISBN", async () => {

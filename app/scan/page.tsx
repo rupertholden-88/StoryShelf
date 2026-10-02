@@ -15,7 +15,7 @@ import { draftFrom } from "@/lib/draft";
 import { cleanIsbn } from "@/lib/isbn";
 import { lookupIsbn } from "@/lib/lookup";
 import { usePersisted } from "@/lib/persisted";
-import { AGE_BANDS, THEMES, type AgeBand, type Book } from "@/lib/types";
+import { AGE_BANDS, STATUSES, THEMES, type AgeBand, type Book } from "@/lib/types";
 
 type Phase =
   | { k: "scanning" }
@@ -203,6 +203,9 @@ function ScanScreen({ user }: { user: User }) {
               <div><dt>Shelf</dt><dd>{phase.book.theme}</dd></div>
               <div><dt>Added</dt><dd>{phase.book.addedAt ? phase.book.addedAt.toDate().toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "–"}</dd></div>
               <div><dt>Read</dt><dd>{phase.book.readCount} {phase.book.readCount === 1 ? "time" : "times"}</dd></div>
+              {phase.book.status !== "shelf" && (
+                <div><dt>Where</dt><dd>{phase.book.status === "lent" && phase.book.lentTo ? `Lent to ${phase.book.lentTo}` : STATUSES.find((x) => x.id === phase.book.status)?.label}</dd></div>
+              )}
             </dl>
             <div className="btn-row">
               <button type="button" className="btn btn-dark" onClick={again}>Scan another</button>

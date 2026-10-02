@@ -12,10 +12,10 @@ import { Stars } from "@/components/Stars";
 import { SyncedField } from "@/components/SyncedField";
 import { callNumber, surname } from "@/lib/appearance";
 import { firstName } from "@/lib/auth";
-import { rateBook, readAgain, removeBook, updateBook, useBook, useBooks } from "@/lib/books";
+import { rateBook, readAgain, removeBook, setStatus, updateBook, useBook, useBooks } from "@/lib/books";
 import { lookupIsbn } from "@/lib/lookup";
 import { recommend } from "@/lib/recommend";
-import { AGE_BANDS, THEMES, type AgeBand, type Book, type Household, type Rec } from "@/lib/types";
+import { AGE_BANDS, STATUSES, THEMES, type AgeBand, type Book, type Household, type Rec, type Status } from "@/lib/types";
 
 const splitNames = (t: string) => t.split(",").map((a) => a.trim()).filter(Boolean);
 
@@ -81,7 +81,7 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
   };
 
   const remove = async () => {
-    if (!confirm(`Remove ${book.title} from the library?`)) return;
+    if (!confirm(`Remove ${book.title} from the library completely? If it's been outgrown or given away, use "Where is it?" instead so it isn't bought again.`)) return;
     await removeBook(book.isbn);
     router.push("/");
   };
@@ -102,6 +102,11 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
             <div className="tag-row">
               <span className="shelf-label">{book.theme}</span>
               {ageLabel && <span className="shelf-label">{ageLabel}</span>}
+              {book.status !== "shelf" && (
+                <span className="shelf-label status-tag">
+                  {book.status === "lent" && book.lentTo ? `Lent to ${book.lentTo}` : STATUSES.find((s) => s.id === book.status)?.label}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -166,6 +171,18 @@ function BookDetail({ isbn, user, household }: { isbn: string; user: User; house
             <HeartIcon on={book.favourite} />
           </button>
         </div>
+        <div className="card-row where-row">
+          <label htmlFor="where" className="card-key">Where is it?</label>
+          <select id="where" className="field where-select" value={book.status} onChange={(e) => setStatus(book.isbn, e.target.value as Status, book.lentTo)}>
+            {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+        </div>
+        {book.status === "lent" && (
+          <div className="card-row where-row">
+            <label htmlFor="lent-to" className="card-key">Lent to</label>
+            <SyncedField id="lent-to" value={book.lentTo ?? ""} onSave={(who) => setStatus(book.isbn, "lent", who)} />
+          </div>
+        )}
         <div className="card-row last">
           <span className="card-key">Read {book.readCount} {book.readCount === 1 ? "time" : "times"}</span>
           <button type="button" className="btn btn-small btn-outline" onClick={() => readAgain(book.isbn)}>Read it again</button>

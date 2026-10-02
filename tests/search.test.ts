@@ -4,7 +4,7 @@ import type { Book } from "@/lib/types";
 
 const book = (over: Partial<Book>): Book => ({
   isbn: "9780000000000", title: "A book", authors: [], illustrators: [], coverUrl: null, subjects: [],
-  theme: "Stories", ageBand: "3-5", format: "picture", pages: null, favourite: false, readCount: 0, ratings: {},
+  theme: "Stories", ageBand: "3-5", format: "picture", pages: null, favourite: false, readCount: 0, ratings: {}, status: "shelf",
   ...over,
 });
 

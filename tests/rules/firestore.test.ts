@@ -112,6 +112,14 @@ describe("books", () => {
     await assertFails(updateDoc(ref, { title: "" }));
     await assertFails(updateDoc(ref, { title: deleteField() }));
   });
+  it("books can be put away, lent (with a name) or passed on, and nothing else", async () => {
+    const ref = doc(member(), H, "books", "111");
+    await assertSucceeds(updateDoc(ref, { status: "away" }));
+    await assertSucceeds(updateDoc(ref, { status: "lent", lentTo: "Cousin Ella" }));
+    await assertSucceeds(updateDoc(ref, { status: "gone", lentTo: deleteField() }));
+    await assertFails(updateDoc(ref, { status: "stolen" }));
+    await assertFails(updateDoc(ref, { status: "lent", lentTo: "x".repeat(61) }));
+  });
   it("members can remove books", async () => {
     await assertSucceeds(deleteDoc(doc(member(), H, "books", "111")));
   });

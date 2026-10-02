@@ -21,6 +21,15 @@ export const THEMES = [
   "Stories",
 ] as const;
 
+/** Where a book is. Only "shelf" books are on the bookcase; the rest still count as owned. */
+export type Status = "shelf" | "away" | "lent" | "gone";
+export const STATUSES: { id: Status; label: string; plural: string }[] = [
+  { id: "shelf", label: "On the shelf", plural: "On the shelf" },
+  { id: "away", label: "Put away", plural: "Put away" },
+  { id: "lent", label: "Lent out", plural: "Lent out" },
+  { id: "gone", label: "Passed on", plural: "Passed on" },
+];
+
 export interface Rating {
   name: string;
   stars: number;
@@ -40,6 +49,9 @@ export interface Book {
   favourite: boolean;
   readCount: number;
   ratings: Record<string, Rating>;
+  status: Status;
+  /** Who has it, when lent out. */
+  lentTo?: string;
   addedAt?: Timestamp | null;
   addedBy?: string;
   /** When missing details were last looked up automatically (ms). */

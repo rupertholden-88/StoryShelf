@@ -8,10 +8,10 @@ import { CoversIcon, SearchIcon, SettingsIcon, SpinesIcon } from "@/components/I
 import { Shelf } from "@/components/Shelf";
 import { arrange, type Mode, type View } from "@/lib/arrange";
 import { useBackfill } from "@/lib/backfill";
-import { useBooks } from "@/lib/books";
+import { onShelf, useBooks } from "@/lib/books";
 import { bandForMonths, childAgeMonths } from "@/lib/household";
 import { usePersisted } from "@/lib/persisted";
-import type { Household } from "@/lib/types";
+import { STATUSES, type Household } from "@/lib/types";
 
 export default function LibraryPage() {
   return <Gate>{({ household }) => <Library household={household} />}</Gate>;
@@ -28,7 +28,11 @@ function Library({ household }: { household: Household }) {
   const childName = household.childName || "Our";
   const nowBand = bandForMonths(childAgeMonths(household));
 
-  const shelves = useMemo(() => arrange(books, mode, nowBand), [books, mode, nowBand]);
+  const shelved = useMemo(() => books.filter(onShelf), [books]);
+  const shelves = useMemo(() => arrange(shelved, mode, nowBand), [shelved, mode, nowBand]);
+  const elsewhere = STATUSES.filter((s) => s.id !== "shelf")
+    .map((s) => ({ ...s, n: books.filter((b) => b.status === s.id).length }))
+    .filter((s) => s.n > 0);
 
   return (
     <div className="library-page">
@@ -36,7 +40,7 @@ function Library({ household }: { household: Household }) {
         <div className="lib-title-row">
           <div>
             <h1 className="lib-title">{household.childName ? `${childName}'s library` : "Our library"}</h1>
-            <p className="lib-sub">{loading ? "Counting books…" : `${books.length} ${books.length === 1 ? "book" : "books"}`}</p>
+            <p className="lib-sub">{loading ? "Counting books…" : `${shelved.length} ${shelved.length === 1 ? "book" : "books"} on the shelves`}</p>
           </div>
           <div className="header-icons">
             <Link href="/search" className="icon-btn round" aria-label="Search">
@@ -68,6 +72,11 @@ function Library({ household }: { household: Household }) {
           </div>
         ) : (
           shelves.map((s) => <Shelf key={s.id} shelf={s} view={view} childName={childName} />)
+        )}
+        {elsewhere.length > 0 && (
+          <Link href="/elsewhere" className="elsewhere-link">
+            Not on the shelves: {elsewhere.map((s) => `${s.n} ${s.label.toLowerCase()}`).join(" · ")}
+          </Link>
         )}
       </main>
 

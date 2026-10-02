@@ -270,6 +270,15 @@ html[data-splash="seen"] .splash { display: none; }
 .gift-claim { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
 .gift-claim .field { flex: 1; min-width: 0; }
 
+/* Books not on the shelves */
+.elsewhere-link { display: block; margin: 14px 4px 0; padding: 12px 14px; border-radius: 8px; background: rgba(0, 0, 0, 0.25); color: var(--paper); font-size: 14px; font-weight: 700; text-decoration: none; }
+.elsewhere-row { display: flex; align-items: center; justify-content: space-between; padding-right: 6px; }
+.elsewhere-row .shelf-hit { flex: 1; min-width: 0; }
+.section-count { font-family: var(--sans); font-size: 15px; color: var(--muted); }
+.where-row { align-items: center; gap: 12px; }
+.where-row .field, .where-select { flex: 1; max-width: 60%; min-height: 44px; }
+.status-tag { background: #f6e6bf; }
+
 /* Settings */
 .header-icons { display: flex; gap: 8px; }
 .settings { gap: 16px; }

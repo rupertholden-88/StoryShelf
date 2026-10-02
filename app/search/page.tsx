@@ -10,6 +10,7 @@ import { HitCard } from "@/components/HitCard";
 import { BackIcon } from "@/components/Icons";
 import { useBooks, useWishlist, wishId } from "@/lib/books";
 import { searchBooks, searchShelves, type Hit } from "@/lib/search";
+import { STATUSES } from "@/lib/types";
 
 export default function SearchPage() {
   return <Gate>{() => <Search />}</Gate>;
@@ -94,7 +95,7 @@ function Search() {
                         <CoverArt book={b} width={44} height={58} />
                         <span>
                           <span className="hit-title">{b.title}</span>
-                          <span className="hit-meta">{[b.authors[0], b.theme].filter(Boolean).join(" · ")}</span>
+                          <span className="hit-meta">{[b.authors[0], b.status === "shelf" ? b.theme : STATUSES.find((x) => x.id === b.status)?.label].filter(Boolean).join(" · ")}</span>
                         </span>
                       </Link>
                     </li>

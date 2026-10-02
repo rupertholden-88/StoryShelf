@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  collection, deleteDoc, doc, FieldPath, getDoc, getDocs, increment, onSnapshot, query,
+  collection, deleteDoc, deleteField, doc, FieldPath, getDoc, getDocs, increment, onSnapshot, query,
   serverTimestamp, setDoc, updateDoc, where, type Timestamp,
 } from "firebase/firestore";
 import { db, householdId } from "./firebase";
@@ -30,6 +30,8 @@ function withDefaults(data: Partial<Book>, isbn: string): Book {
     favourite: data.favourite ?? false,
     readCount: data.readCount ?? 0,
     ratings: data.ratings ?? {},
+    status: data.status ?? "shelf",
+    lentTo: data.lentTo,
     addedAt: data.addedAt ?? null,
     addedBy: data.addedBy,
     lookedUpAt: data.lookedUpAt,
@@ -70,7 +72,7 @@ export async function getBook(isbn: string): Promise<Book | null> {
   return snap.exists() ? withDefaults(snap.data() as Partial<Book>, snap.id) : null;
 }
 
-export type NewBook = Omit<Book, "favourite" | "readCount" | "ratings" | "addedAt" | "addedBy" | "lookedUpAt" | "lookedUpV">;
+export type NewBook = Omit<Book, "favourite" | "readCount" | "ratings" | "status" | "lentTo" | "addedAt" | "addedBy" | "lookedUpAt" | "lookedUpV">;
 
 export async function addBook(b: NewBook, addedBy: string) {
   await setDoc(bookRef(b.isbn), {
@@ -92,6 +94,13 @@ async function clearWished(b: Pick<Book, "isbn" | "title">) {
 }
 
 export const updateBook = (isbn: string, patch: Partial<Book>) => updateDoc(bookRef(isbn), patch);
+
+/** Moves a book on or off the shelves. A name is only kept while it's lent out. */
+export const setStatus = (isbn: string, status: Book["status"], lentTo?: string) =>
+  updateDoc(bookRef(isbn), status === "lent" ? { status, lentTo: lentTo?.trim() ?? "" } : { status, lentTo: deleteField() });
+
+/** Books that are on the bookcase (not put away, lent or passed on). */
+export const onShelf = (b: Book) => b.status === "shelf";
 export const rateBook = (isbn: string, uid: string, name: string, stars: number) =>
   updateDoc(bookRef(isbn), new FieldPath("ratings", uid), { name, stars });
 export const readAgain = (isbn: string) => updateDoc(bookRef(isbn), { readCount: increment(1) });
