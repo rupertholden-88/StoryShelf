@@ -20,6 +20,9 @@ describe("guessFormat", () => {
     expect(guessFormat("Board book", null, [])).toBe("board");
     expect(guessFormat(null, null, ["Board books"])).toBe("board");
   });
+  it("treats very short books as board books", () => {
+    expect(guessFormat(null, 10, [])).toBe("board");
+  });
   it("treats short books as picture books", () => {
     expect(guessFormat(null, 32, [])).toBe("picture");
     expect(guessFormat(null, 200, [])).toBe("other");

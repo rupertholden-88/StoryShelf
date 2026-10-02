@@ -28,15 +28,16 @@ function ForYou({ household }: { household: Household }) {
     if (seeds.length === 0) { setRecs([]); return; }
     let live = true;
     setRecs(null);
-    recommend(books, seeds).then((r) => live && setRecs(r)).catch(() => live && setRecs([]));
+    recommend(books, seeds, 60).then((r) => live && setRecs(r)).catch(() => live && setRecs([]));
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, seeds.map((s) => s.isbn).join(",")]);
 
   const shown = useMemo(() => {
-    if (!recs || !nowBand) return recs;
+    if (!recs || !nowBand) return recs?.slice(0, 24) ?? null;
     const nowIdx = bandIndex(nowBand);
-    return recs.filter((r) => (tab === "now" ? bandIndex(r.ageBand) <= nowIdx + 1 : bandIndex(r.ageBand) > nowIdx + 1));
+    // A bigger pool is fetched so each tab can show a full page.
+    return recs.filter((r) => (tab === "now" ? bandIndex(r.ageBand) <= nowIdx + 1 : bandIndex(r.ageBand) > nowIdx + 1)).slice(0, 24);
   }, [recs, tab, nowBand]);
 
   return (

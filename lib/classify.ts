@@ -21,7 +21,10 @@ export function guessTheme(subjects: string[], title: string): string {
 export function guessFormat(physicalFormat: string | null, pages: number | null, subjects: string[]): Format {
   const hay = ((physicalFormat || "") + " " + subjects.join(" ")).toLowerCase();
   if (/board ?book/.test(hay)) return "board";
-  if (/picture book/.test(hay) || (pages !== null && pages <= 48)) return "picture";
+  if (/picture book/.test(hay)) return "picture";
+  // Very short books are nearly always board books (touchy-feely, first words…).
+  if (pages !== null && pages <= 14) return "board";
+  if (pages !== null && pages <= 48) return "picture";
   return "other";
 }
 

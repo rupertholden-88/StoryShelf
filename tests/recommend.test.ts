@@ -1,5 +1,5 @@
-import { afterEach, expect, it, vi } from "vitest";
-import { recommend } from "@/lib/recommend";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { recommend, suggestionAge, usefulSubjects } from "@/lib/recommend";
 import type { Book } from "@/lib/types";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -30,4 +30,22 @@ it("skips suggestions with no author and puts ones with covers first", async () 
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ docs }))));
   const recs = await recommend([seed], [seed]);
   expect(recs.map((r) => r.title)).toEqual(["Can't You Sleep, Little Bear?", "No Cover Book"]);
+});
+
+describe("usefulSubjects", () => {
+  it("splits run-together subjects and drops broad ones", () => {
+    expect(usefulSubjects(["Pictorial worksJuvenile fiction", "Farm animals", "Juvenile literature", "Fiction", "Tractors"]))
+      .toEqual(["Farm animals", "Tractors"]);
+  });
+});
+
+describe("suggestionAge", () => {
+  it("borrows the age of the book it came from when the record says nothing", () => {
+    expect(suggestionAge(["Juvenile fiction", "Animals"], null, "0-1")).toBe("0-1");
+  });
+  it("trusts page counts and baby/board subjects", () => {
+    expect(suggestionAge(["Juvenile fiction"], 10, "3-5")).toBe("1-2");
+    expect(suggestionAge(["Board books"], null, "3-5")).toBe("1-2");
+    expect(suggestionAge(["Juvenile fiction"], 120, "0-1")).toBe("3-5");
+  });
 });

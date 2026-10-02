@@ -1,7 +1,7 @@
 import { guessAge, guessFormat } from "./classify";
 import { editionCover, pickEdition } from "./isbn";
 import { LOOKUP_TIMEOUT_MS } from "./lookup";
-import type { Book, Rec } from "./types";
+import type { AgeBand, Book, Rec } from "./types";
 
 export const KID = /juvenile|children|picture book|board book|toddler|baby|nursery|preschool/i;
 const GENERIC = /^(fiction|juvenile fiction|juvenile literature|children's (fiction|stories|books)|picture books( for children)?|board books|stories in rhyme|english language|large type books|accessible book|protected daisy|in library|toy and movable books|lift-the-flap books|readers)$/i;
@@ -10,12 +10,28 @@ const GENERIC = /^(fiction|juvenile fiction|juvenile literature|children's (fict
 export const titleKey = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, "");
 const norm = titleKey;
 
-function useful(subject: string): boolean {
-  return subject.length < 40 && !/[:=]/.test(subject) && !GENERIC.test(subject.trim());
+/** Open Library sometimes runs two subjects together ("Pictorial worksJuvenile fiction"). */
+const subjectParts = (s: string) => s.split(/(?<=[a-z])(?=[A-Z])/).map((p) => p.trim()).filter(Boolean);
+
+/** Subjects specific enough to find similar books with, and to name as the reason. */
+export function usefulSubjects(subjects: string[]): string[] {
+  return subjects
+    .flatMap(subjectParts)
+    .filter((s) => s.length < 40 && !/[:=]/.test(s) && !GENERIC.test(s) && !/juvenile|pictorial works|^fiction\b/i.test(s));
+}
+
+/**
+ * Age for a suggestion. Search results rarely say more than "juvenile fiction", so unless the subjects
+ * or page count point somewhere, assume it's for the same age as the book it was found from.
+ */
+export function suggestionAge(subjects: string[], pages: number | null, seedAge: AgeBand): AgeBand {
+  const format = guessFormat(null, pages, subjects);
+  const telling = pages !== null || format !== "other" || /\b(baby|babies|infant|toddler)/i.test(subjects.join(" "));
+  return telling ? guessAge(format, subjects, pages) : seedAge;
 }
 
 async function search(params: string): Promise<any[]> {
-  const url = `https://openlibrary.org/search.json?${params}&language=eng&limit=25&fields=key,title,author_name,isbn,cover_i,subject`;
+  const url = `https://openlibrary.org/search.json?${params}&language=eng&limit=25&fields=key,title,author_name,isbn,cover_i,subject,number_of_pages_median`;
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) });
     if (!res.ok) return [];
@@ -39,8 +55,8 @@ export function pickSeeds(books: Book[]): Book[] {
 }
 
 export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promise<Rec[]> {
-  // v2: English editions only (earlier results could hold French/Spanish covers).
-  const cacheKey = "nb-recs2:" + seeds.map((s) => s.isbn).join(",") + ":" + owned.length + ":" + limit;
+  // v3: English editions only, and ages taken from the book each suggestion came from.
+  const cacheKey = "nb-recs3:" + seeds.map((s) => s.isbn).join(",") + ":" + owned.length + ":" + limit;
   try {
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) return JSON.parse(cached);
@@ -49,7 +65,7 @@ export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promi
   const ownedTitles = new Set(owned.map((b) => norm(b.title)));
   const found = new Map<string, Rec>();
 
-  const add = (docs: any[], weight: number, why: string) => {
+  const add = (docs: any[], weight: number, why: string, seedAge: AgeBand) => {
     for (const d of docs) {
       // Records with no author are usually incomplete (and look it), so they aren't suggested.
       if (!d.title || !d.author_name?.length) continue;
@@ -71,7 +87,7 @@ export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promi
         title: d.title,
         author: d.author_name[0],
         coverUrl: editionCover(edition, d.cover_i),
-        ageBand: guessAge(guessFormat(null, null, subjects), subjects, null),
+        ageBand: suggestionAge(subjects, typeof d.number_of_pages_median === "number" ? d.number_of_pages_median : null, seedAge),
         why,
         // A cover makes a suggestion far easier to recognise, so those edge ahead.
         score: weight + (d.cover_i ? 1 : 0),
@@ -83,15 +99,15 @@ export async function recommend(owned: Book[], seeds: Book[], limit = 24): Promi
   for (const seed of seeds.slice(0, 6)) {
     const author = seed.authors[0];
     if (author && !/various|anonymous/i.test(author)) {
-      jobs.push(search(`author=${encodeURIComponent(author)}`).then((docs) => add(docs, 3, `Same author as ${seed.title}`)));
+      jobs.push(search(`author=${encodeURIComponent(author)}`).then((docs) => add(docs, 3, `Same author as ${seed.title}`, seed.ageBand)));
     }
     const illustrator = seed.illustrators?.[0];
     if (illustrator && illustrator !== author) {
-      jobs.push(search(`author=${encodeURIComponent(illustrator)}`).then((docs) => add(docs, 2, `Same illustrator as ${seed.title}`)));
+      jobs.push(search(`author=${encodeURIComponent(illustrator)}`).then((docs) => add(docs, 2, `Same illustrator as ${seed.title}`, seed.ageBand)));
     }
-    for (const s of seed.subjects.filter(useful).slice(0, 2)) {
+    for (const s of usefulSubjects(seed.subjects).slice(0, 2)) {
       jobs.push(
-        search(`subject=${encodeURIComponent(s.toLowerCase())}`).then((docs) => add(docs, 2, `Like ${seed.title}: ${s.toLowerCase()}`))
+        search(`subject=${encodeURIComponent(s.toLowerCase())}`).then((docs) => add(docs, 2, `Like ${seed.title}: ${s.toLowerCase()}`, seed.ageBand))
       );
     }
   }

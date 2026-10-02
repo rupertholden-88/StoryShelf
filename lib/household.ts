@@ -3,12 +3,16 @@
 import { useEffect, useState } from "react";
 import {
   addDoc, arrayRemove, arrayUnion, collection, doc, limit, onSnapshot, query, serverTimestamp, updateDoc, where,
+  type DocumentSnapshot,
 } from "firebase/firestore";
 import { db, setHouseholdId } from "./firebase";
 import { AGE_BANDS, type AgeBand, type Household } from "./types";
 
 /** "none": signed in but not in any library yet, so they can start one. */
 export type HouseholdStatus = "loading" | "ok" | "none" | "error";
+
+/** The library from before libraries were found by email (households/holden). */
+const LEGACY_HOUSEHOLD = "holden";
 
 export const normEmail = (e: string) => e.trim().toLowerCase();
 export const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
@@ -21,23 +25,29 @@ export function useHousehold(email: string | null) {
   useEffect(() => {
     if (!email) return;
     setStatus("loading");
+    const found = (d: DocumentSnapshot | undefined) => {
+      if (!d?.exists()) {
+        setHouseholdId(null);
+        setHousehold(null);
+        setStatus("none");
+        return;
+      }
+      setHouseholdId(d.id);
+      setHousehold({ ...(d.data() as Omit<Household, "id">), id: d.id });
+      setStatus("ok");
+    };
+    let stopLegacy: (() => void) | undefined;
     const q = query(collection(db(), "households"), where("members", "array-contains", email), limit(1));
-    return onSnapshot(
+    const stop = onSnapshot(
       q,
-      (snap) => {
-        const d = snap.docs[0];
-        if (!d) {
-          setHouseholdId(null);
-          setHousehold(null);
-          setStatus("none");
-          return;
-        }
-        setHouseholdId(d.id);
-        setHousehold({ ...(d.data() as Omit<Household, "id">), id: d.id });
-        setStatus("ok");
-      },
-      () => setStatus("error")
+      (snap) => found(snap.docs[0]),
+      // Older firestore.rules don't allow finding a library by email; open the original library directly
+      // until the new rules are published.
+      () => {
+        stopLegacy = onSnapshot(doc(db(), "households", LEGACY_HOUSEHOLD), found, () => setStatus("error"));
+      }
     );
+    return () => { stop(); stopLegacy?.(); };
   }, [email]);
 
   return { household, status };

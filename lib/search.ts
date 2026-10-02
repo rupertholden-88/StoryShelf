@@ -22,7 +22,7 @@ export function searchShelves(books: Book[], q: string): Book[] {
 
 /** Open Library search by title or author, children's books first, leaving out ones already on the shelves. */
 export async function searchBooks(q: string, owned: Book[]): Promise<Hit[]> {
-  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&language=eng&limit=30&fields=key,title,author_name,isbn,cover_i,subject,first_publish_year`;
+  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&language=eng&limit=30&fields=key,title,author_name,isbn,cover_i,subject,first_publish_year,number_of_pages_median`;
   const res = await fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`search ${res.status}`);
   const docs: any[] = (await res.json()).docs ?? [];
@@ -42,7 +42,10 @@ export async function searchBooks(q: string, owned: Book[]): Promise<Hit[]> {
       title: d.title,
       author: d.author_name?.[0] ?? "Unknown author",
       coverUrl: editionCover(edition, d.cover_i),
-      ageBand: guessAge(guessFormat(null, null, subjects), subjects, null),
+      ageBand: (() => {
+        const pages = typeof d.number_of_pages_median === "number" ? d.number_of_pages_median : null;
+        return guessAge(guessFormat(null, pages, subjects), subjects, pages);
+      })(),
       why: "Found by search",
       score: 0,
       year: typeof d.first_publish_year === "number" ? d.first_publish_year : null,
