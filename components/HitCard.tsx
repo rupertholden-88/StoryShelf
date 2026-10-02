@@ -30,7 +30,7 @@ export function HitCard({ rec, wished, year, showAge = true, showWhy = false }: 
           <button
             type="button"
             className="icon-btn wish-btn"
-            aria-label={wished ? `Remove ${rec.title} from saved books` : `Save ${rec.title}`}
+            aria-label={wished ? `Remove ${rec.title} from the wishlist` : `Add ${rec.title} to the wishlist`}
             aria-pressed={wished}
             onClick={() => toggleWishlist({ key, isbn, title, author, coverUrl, ageBand, why, score }, !wished)}
           >

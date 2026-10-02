@@ -34,6 +34,32 @@ service cloud.firestore {
         && (!('giftToken' in h) || (h.giftToken is string && h.giftToken.size() >= 20 && h.giftToken.size() <= 64));
     }
 
+    // The family wishlist: anyone with the secret link can read it; only the library's members change it.
+    match /giftLists/{token} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if token.size() >= 20
+        && isMember(request.resource.data.household)
+        && request.resource.data.keys().hasOnly(['household', 'childName', 'items', 'updatedAt'])
+        && request.resource.data.items is list && request.resource.data.items.size() <= 100;
+      allow update: if isMember(resource.data.household)
+        && request.resource.data.household == resource.data.household
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['childName', 'items', 'updatedAt'])
+        && request.resource.data.items is list && request.resource.data.items.size() <= 100;
+      allow delete: if isMember(resource.data.household);
+
+      // "I'm getting this", one document per book. Family need no account, so anyone with the link
+      // can claim (just a name) or unclaim.
+      match /claims/{key} {
+        allow read: if true;
+        allow create, update: if exists(/databases/$(database)/documents/giftLists/$(token))
+          && request.resource.data.keys().hasOnly(['name', 'at'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 40;
+        allow delete: if true;
+      }
+    }
+
     match /households/{hid} {
       // Found by the signed-in person's email: where('members', 'array-contains', email).
       allow get, list: if signedIn() && request.auth.token.email in resource.data.members;

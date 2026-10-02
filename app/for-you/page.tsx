@@ -45,7 +45,7 @@ function ForYou({ household }: { household: Household }) {
       <header className="lib-header">
         <div className="lib-title-row">
           <h1 className="lib-title">For you</h1>
-          <Link href="/for-you/saved" className="saved-link">Saved{saved.length ? ` · ${saved.length}` : ""}</Link>
+          <Link href="/for-you/saved" className="saved-link">Wishlist{saved.length ? ` · ${saved.length}` : ""}</Link>
         </div>
         <p className="lib-sub tucked">
           {seeds.length ? `Picked from ${seeds.slice(0, 2).map((s) => s.title).join(" and ")}${seeds.length > 2 ? " and more" : ""}` : "Rate a few books to get suggestions"}

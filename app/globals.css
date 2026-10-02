@@ -253,6 +253,23 @@ html[data-splash="seen"] .splash { display: none; }
 .quick-shelf { color: var(--muted); font-size: 13px; }
 .undone { text-decoration: line-through; color: var(--muted); }
 
+/* Wishlist */
+.wishlist { gap: 18px; }
+.wish-section { display: flex; flex-direction: column; gap: 10px; }
+.share-card .text-btn { align-self: flex-start; padding-left: 0; }
+.claimed { margin: 2px 0 0; font-size: 13px; font-weight: 700; color: var(--wall); }
+
+/* Family's view of the wishlist */
+.gift-head { padding: calc(20px + var(--safe-top)) 20px 18px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
+.gift-logo { width: min(64%, 240px); }
+.gift-logo svg { display: block; width: 100%; height: auto; }
+.gift-head .lib-sub { max-width: 36ch; line-height: 1.45; }
+.gift-page .rec-list { padding-bottom: calc(32px + var(--safe-bottom)); }
+.gift-page .rec-actions { flex-wrap: wrap; }
+.gift-taken { opacity: 0.7; }
+.gift-claim { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.gift-claim .field { flex: 1; min-width: 0; }
+
 /* Settings */
 .header-icons { display: flex; gap: 8px; }
 .settings { gap: 16px; }

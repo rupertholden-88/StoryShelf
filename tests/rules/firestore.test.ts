@@ -127,3 +127,40 @@ describe("wishlist", () => {
     await assertFails(setDoc(doc(member("m", "mallory@example.com"), H, "wishlist", "owlbabies"), rec));
   });
 });
+
+describe("family wishlist", () => {
+  const T = "giftLists/abcdefghijklmnopqrstuv";
+  const list = { household: "test", childName: "James", items: [{ key: "zog", isbn: null, title: "Zog", author: "Julia Donaldson", coverUrl: null, ageBand: "2-3" }] };
+  const anyone = () => env.unauthenticatedContext().firestore();
+  const seed = () => env.withSecurityRulesDisabled((c) => setDoc(doc(c.firestore(), T), list));
+
+  it("members can create, update and delete their library's list", async () => {
+    await assertSucceeds(setDoc(doc(member(), T), list));
+    await assertSucceeds(updateDoc(doc(member(), T), { items: [], childName: "Jamie" }));
+    await assertSucceeds(deleteDoc(doc(member(), T)));
+  });
+  it("outsiders can't create a list for someone else's library, or with a short token", async () => {
+    await assertFails(setDoc(doc(member("m", "mallory@example.com"), T), list));
+    await assertFails(setDoc(doc(member(), "giftLists/short"), list));
+    await assertFails(setDoc(doc(member(), T), { ...list, extra: 1 }));
+  });
+  it("anyone with the link can read it and its claims, but not list every list", async () => {
+    await seed();
+    await assertSucceeds(getDoc(doc(anyone(), T)));
+    await assertSucceeds(getDocs(collection(anyone(), T, "claims")));
+    await assertFails(getDocs(collection(anyone(), "giftLists")));
+  });
+  it("anyone can claim and unclaim a book with a name", async () => {
+    await seed();
+    await assertSucceeds(setDoc(doc(anyone(), T, "claims", "zog"), { name: "Grandma" }));
+    await assertSucceeds(deleteDoc(doc(anyone(), T, "claims", "zog")));
+  });
+  it("family can't change the books, make odd claims, claim on a missing list or delete it", async () => {
+    await seed();
+    await assertFails(updateDoc(doc(anyone(), T), { items: [] }));
+    await assertFails(setDoc(doc(anyone(), T, "claims", "zog"), { name: "" }));
+    await assertFails(setDoc(doc(anyone(), T, "claims", "zog"), { name: "Gran", note: "x" }));
+    await assertFails(setDoc(doc(anyone(), "giftLists/nonexistentnonexistent1", "claims", "zog"), { name: "Gran" }));
+    await assertFails(deleteDoc(doc(anyone(), T)));
+  });
+});

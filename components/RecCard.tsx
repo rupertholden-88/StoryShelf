@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { firebaseAuth, householdId } from "@/lib/firebase";
 import { shopLinks } from "@/lib/recommend";
 import { AGE_BANDS, type Rec } from "@/lib/types";
@@ -12,7 +12,7 @@ type EbayResult = { lowest?: { value: string; currency: string }; url?: string; 
 const money = (v: string, c: string) =>
   new Intl.NumberFormat("en-GB", { style: "currency", currency: c || "GBP" }).format(Number(v));
 
-export function RecCard({ rec, wished, onWish }: { rec: Rec; wished: boolean; onWish: (on: boolean) => void }) {
+export function RecCard({ rec, wished, onWish, note }: { rec: Rec; wished: boolean; onWish: (on: boolean) => void; note?: ReactNode }) {
   const links = shopLinks(rec);
   const [ebay, setEbay] = useState<EbayResult | null>(null);
 
@@ -40,6 +40,7 @@ export function RecCard({ rec, wished, onWish }: { rec: Rec; wished: boolean; on
         <h2 className="rec-title">{rec.title}</h2>
         <p className="rec-author">{rec.author}{age && <span className="rec-age">{age}</span>}</p>
         <p className="rec-why">{rec.why}</p>
+        {note}
         <div className="rec-actions">
           <a className="shop-btn" href={links.amazon} target="_blank" rel="noopener noreferrer">
             <span className="shop-name">Amazon UK</span>

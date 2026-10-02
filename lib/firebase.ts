@@ -1,7 +1,7 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
 import {
-  getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, type Firestore,
+  connectFirestoreEmulator, getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, type Firestore,
 } from "firebase/firestore";
 import { firebaseConfig } from "./config";
 
@@ -28,6 +28,12 @@ export function db(): Firestore {
     });
   } catch {
     firestore = getFirestore(firebaseApp());
+  }
+  // Local testing against the Firestore emulator, e.g. NEXT_PUBLIC_FIRESTORE_EMULATOR=localhost:8080
+  const emulator = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR;
+  if (emulator) {
+    const [host, port] = emulator.split(":");
+    connectFirestoreEmulator(firestore, host, Number(port));
   }
   return firestore;
 }

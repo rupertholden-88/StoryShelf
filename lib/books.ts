@@ -6,6 +6,7 @@ import {
   serverTimestamp, setDoc, updateDoc, where, type Timestamp,
 } from "firebase/firestore";
 import { db, householdId } from "./firebase";
+import { syncGiftList } from "./gifts";
 import { titleKey } from "./recommend";
 import type { Book, Rec } from "./types";
 
@@ -81,6 +82,7 @@ export async function addBook(b: NewBook, addedBy: string) {
     addedBy,
   });
   await clearWished(b).catch(() => {});
+  syncGiftList().catch(() => {});
 }
 
 /** Takes a newly added book off the saved list, whichever edition was saved. */
@@ -123,4 +125,6 @@ export async function toggleWishlist(r: Rec, on: boolean) {
   } else {
     await deleteDoc(wishRef(wishId(r)));
   }
+  // Keep the family's shared copy up to date.
+  syncGiftList().catch(() => {});
 }

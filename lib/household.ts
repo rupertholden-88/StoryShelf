@@ -6,6 +6,7 @@ import {
   type DocumentSnapshot,
 } from "firebase/firestore";
 import { db, setHouseholdId } from "./firebase";
+import { setSharing } from "./gifts";
 import { AGE_BANDS, type AgeBand, type Household } from "./types";
 
 /** "none": signed in but not in any library yet, so they can start one. */
@@ -28,12 +29,15 @@ export function useHousehold(email: string | null) {
     const found = (d: DocumentSnapshot | undefined) => {
       if (!d?.exists()) {
         setHouseholdId(null);
+        setSharing(null);
         setHousehold(null);
         setStatus("none");
         return;
       }
+      const data = d.data() as Omit<Household, "id">;
       setHouseholdId(d.id);
-      setHousehold({ ...(d.data() as Omit<Household, "id">), id: d.id });
+      setSharing({ token: data.giftToken, childName: data.childName });
+      setHousehold({ ...data, id: d.id });
       setStatus("ok");
     };
     let stopLegacy: (() => void) | undefined;
